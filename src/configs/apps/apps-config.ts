@@ -200,8 +200,8 @@ const purusTwitter = create_app_config({
 
 	dock_breaks_before: true,
 
-	height: 600,
-	width: 800,
+	height: 650,
+	width: 980,
 });
 
 const viewSource = create_app_config({

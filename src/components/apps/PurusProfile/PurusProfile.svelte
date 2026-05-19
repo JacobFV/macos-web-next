@@ -4,6 +4,7 @@
 	import BlogIcon from '~icons/mdi/grease-pencil';
 	import WorksIcon from '~icons/ic/round-workspaces';
 	import GithubIcon from '~icons/mdi/github';
+	import DevToIcon from '~icons/mdi/dev-to';
 	import LinkedinIcon from '~icons/mdi/linkedin';
 	import InstagramIcon from '~icons/mdi/instagram';
 	import EmailIcon from '~icons/mdi/email-outline';
@@ -24,67 +25,92 @@
 
 	<aside class:light={preferences.theme.scheme === 'light'}>
 		<nav>
-			<a href="https://jacobfv.github.io" use:external> <WebIcon /> Website </a>
-			<a href="https://jacobfv.github.io/blog/" use:external> <BlogIcon /> Blog </a>
-			<a href="https://jacobfv.github.io/projects/" use:external> <WorksIcon /> Projects </a>
-			<a href="https://jacobfv.github.io/resume/" use:external> <ResumeIcon /> Resume </a>
+			<div class="link-group">
+				<span class="link-group-title">Puru Vijay</span>
+				<a href="https://www.puruvj.dev/blog" use:external> <BlogIcon /> Blog </a>
+				<a href="https://www.puruvj.dev/works" use:external> <WorksIcon /> Works </a>
+				<a href="https://www.puruvj.dev/twitter" use:external>
+					<TwitterIcon />
+					Twitter
+				</a>
+				<a href="https://www.puruvj.dev/github" use:external> <GithubIcon /> GitHub </a>
+				<a href="https://www.puruvj.dev/devto" use:external> <DevToIcon /> Dev.to </a>
+			</div>
 
 			<hr />
 
-			<a href="https://twitter.com/jvboid" use:external>
-				<TwitterIcon />
-				X / Twitter
-			</a>
-			<a href="https://www.linkedin.com/in/jacob-f-valdez/" use:external>
-				<LinkedinIcon />
-				LinkedIn
-			</a>
-			<a href="https://github.com/JacobFV" use:external> <GithubIcon /> GitHub </a>
-			<a href="https://www.instagram.com/jvboid/" use:external>
-				<InstagramIcon />
-				Instagram
-			</a>
-			<a href="https://jvboid.art" use:external> <PaletteIcon /> Art </a>
-			<a href="mailto:jacob@humanrobots.ai"> <EmailIcon /> Email </a>
+			<div class="link-group">
+				<span class="link-group-title">Jacob F. Valdez</span>
+				<a href="https://jacobfv.github.io" use:external> <WebIcon /> Website </a>
+				<a href="https://jacobfv.github.io/blog/" use:external> <BlogIcon /> Blog </a>
+				<a href="https://jacobfv.github.io/projects/" use:external> <WorksIcon /> Projects </a>
+				<a href="https://jacobfv.github.io/resume/" use:external> <ResumeIcon /> Resume </a>
+				<a href="https://twitter.com/jvboid" use:external>
+					<TwitterIcon />
+					X / Twitter
+				</a>
+				<a href="https://www.linkedin.com/in/jacob-f-valdez/" use:external>
+					<LinkedinIcon />
+					LinkedIn
+				</a>
+				<a href="https://github.com/JacobFV" use:external> <GithubIcon /> GitHub </a>
+				<a href="https://www.instagram.com/jvboid/" use:external>
+					<InstagramIcon />
+					Instagram
+				</a>
+				<a href="https://jvboid.art" use:external> <PaletteIcon /> Art </a>
+				<a href="mailto:jacob@humanrobots.ai"> <EmailIcon /> Email </a>
+			</div>
 		</nav>
 	</aside>
 
 	<section class="content">
-		<img
-			class="profile-photo"
-			height="200"
-			width="200"
-			src="https://jacobfv.github.io/assets/img/prof_pic.jpg"
-			alt="Jacob F. Valdez"
-		/>
+		<div class="developer-grid">
+			<article class="developer-card">
+				<img class="profile-photo" height="150" width="150" src="./purus-profile/puru.webp" alt="Puru Vijay" />
 
-		<br />
+				<h1>Puru Vijay</h1>
+				<h2>Creator of the original macOS Web</h2>
 
-		<h1>Jacob F. Valdez</h1>
+				<p>
+					Puru created macOS Web and built the original Svelte desktop experience this project
+					started from. His work focuses on frontend engineering, web craft, and expressive
+					interfaces.
+				</p>
 
-		<h2>Software engineer building AI systems</h2>
+				<div class="quick-links">
+					<a href="https://www.puruvj.dev/works" use:external>Works</a>
+					<a href="https://www.puruvj.dev/blog" use:external>Blog</a>
+					<a href="https://www.puruvj.dev/github" use:external>GitHub</a>
+				</div>
+			</article>
 
-		<br /><br />
+			<article class="developer-card">
+				<img
+					class="profile-photo"
+					height="150"
+					width="150"
+					src="./purus-profile/jacob.jpg"
+					alt="Jacob F. Valdez"
+				/>
 
-		<p>
-			Jacob is building <a href="https://vibestartup.pro" use:external>VibeStartup</a>.
-			Previously he was API/Integration Architect at
-			<a href="https://agi.app" use:external>AGI, Inc.</a>, working on APIs, integrations,
-			and agent infrastructure for on-device mobile AI agents.
-		</p>
+				<h1>Jacob F. Valdez</h1>
+				<h2>Software engineer building AI systems</h2>
 
-		<br /><br />
+				<p>
+					Jacob is building <a href="https://vibestartup.pro" use:external>VibeStartup</a>.
+					Previously he was API/Integration Architect at
+					<a href="https://agi.app" use:external>AGI, Inc.</a>, working on APIs, integrations,
+					and agent infrastructure for on-device mobile AI agents.
+				</p>
 
-		<p>
-			Earlier work includes Breezy, Deepshard, Motio, and UTA research labs. He studied
-			computer science at UT Arlington and writes about science, engineering, people, and AI.
-		</p>
-
-		<div class="quick-links">
-			<a href="https://jacobfv.github.io/repos/" use:external>Repos</a>
-			<a href="https://jacobfv.github.io/papers/" use:external>Papers</a>
-			<a href="https://www.admonymous.co/jvboid" use:external>Feedback</a>
-			<a href="https://www.f6s.com/member/jacob-valdez?follow=1" use:external>F6S</a>
+				<div class="quick-links">
+					<a href="https://jacobfv.github.io/repos/" use:external>Repos</a>
+					<a href="https://jacobfv.github.io/papers/" use:external>Papers</a>
+					<a href="https://jacobfv.github.io/resume/" use:external>Resume</a>
+					<a href="https://www.admonymous.co/jvboid" use:external>Feedback</a>
+				</div>
+			</article>
 		</div>
 	</section>
 </section>
@@ -94,15 +120,15 @@
 		--color: var(--system-color-light-hsl);
 
 		display: grid;
-		grid-template-columns: 12rem 1fr;
+		grid-template-columns: 13.5rem 1fr;
 		grid-template-rows: 3rem 1fr;
 
 		border-radius: inherit;
 
 		background-image: linear-gradient(
 			to right,
-			hsla(var(--color), 0.7) 12rem,
-			hsla(var(--color), 1) 12rem 100%
+			hsla(var(--color), 0.7) 13.5rem,
+			hsla(var(--color), 1) 13.5rem 100%
 		);
 
 		transition: --color 200ms ease-in;
@@ -141,7 +167,7 @@
 		transform: translateZ(0);
 
 		height: calc(100% - 2.7px);
-		width: calc(12rem - 2.27px);
+		width: calc(13.5rem - 2.27px);
 
 		margin: 1.8px 0 0px 1.8px;
 
@@ -166,7 +192,7 @@
 
 		&.light {
 			height: calc(100% - 3px);
-			width: calc(12rem - 2.5px);
+			width: calc(13.5rem - 2.5px);
 
 			margin: 1.7px 0 0px 1.7px;
 
@@ -177,9 +203,9 @@
 		nav {
 			display: flex;
 			flex-direction: column;
-			gap: 0.2rem;
+			gap: 0.35rem;
 
-			margin: 4rem 0.6rem;
+			margin: 4rem 0.6rem 1rem;
 
 			hr {
 				display: block;
@@ -190,6 +216,21 @@
 				background-color: hsla(var(--system-color-dark-hsl), 0.2);
 
 				border: none;
+			}
+
+			.link-group {
+				display: flex;
+				flex-direction: column;
+				gap: 0.2rem;
+			}
+
+			.link-group-title {
+				color: hsla(var(--system-color-dark-hsl), 0.58);
+				font-size: 0.72rem;
+				font-weight: 700;
+				letter-spacing: 0.06em;
+				padding: 0.35rem 0.5rem 0.1rem;
+				text-transform: uppercase;
 			}
 
 			a {
@@ -217,11 +258,8 @@
 	.content {
 		grid-area: 2 / 2 / span 1 / span 1;
 
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-
-		padding: 1rem;
+		padding: 1.2rem;
+		overflow: auto;
 
 		.profile-photo {
 			border-radius: 50%;
@@ -230,21 +268,42 @@
 		}
 	}
 
+	.developer-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 1.2rem;
+		height: 100%;
+		align-items: stretch;
+	}
+
+	.developer-card {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: 1rem;
+		border-radius: 1rem;
+		background: hsla(var(--system-color-dark-hsl), 0.04);
+		border: 1px solid hsla(var(--system-color-dark-hsl), 0.08);
+	}
+
 	h1 {
-		font-size: 2.618rem;
-		line-height: 1.618;
+		margin-top: 0.8rem;
+		font-size: 1.8rem;
+		line-height: 1.15;
 		text-align: center;
 	}
 
 	h2 {
-		font-size: 1.618rem;
-		line-height: 1.2;
+		margin-top: 0.35rem;
+		font-size: 1rem;
+		line-height: 1.25;
 		text-align: center;
 		color: hsla(var(--system-color-dark-hsl), 0.72);
 	}
 
 	p {
-		max-width: 34rem;
+		max-width: 28rem;
+		margin-top: 1rem;
 		line-height: 1.618rem;
 		text-align: center;
 
@@ -259,7 +318,8 @@
 		flex-wrap: wrap;
 		justify-content: center;
 		gap: 0.5rem;
-		margin-top: 1.5rem;
+		margin-top: auto;
+		padding-top: 1.5rem;
 
 		a {
 			padding: 0.45rem 0.75rem;
