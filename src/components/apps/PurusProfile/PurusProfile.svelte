@@ -4,7 +4,12 @@
 	import BlogIcon from '~icons/mdi/grease-pencil';
 	import WorksIcon from '~icons/ic/round-workspaces';
 	import GithubIcon from '~icons/mdi/github';
-	import DevToIcon from '~icons/mdi/dev-to';
+	import LinkedinIcon from '~icons/mdi/linkedin';
+	import InstagramIcon from '~icons/mdi/instagram';
+	import EmailIcon from '~icons/mdi/email-outline';
+	import ResumeIcon from '~icons/mdi/file-document-outline';
+	import WebIcon from '~icons/mdi/web';
+	import PaletteIcon from '~icons/mdi/palette-outline';
 
 	function external(node: HTMLAnchorElement) {
 		node.rel = 'noopener noreferrer';
@@ -19,46 +24,68 @@
 
 	<aside class:light={preferences.theme.scheme === 'light'}>
 		<nav>
-			<a href="https://www.puruvj.dev/blog" use:external> <BlogIcon /> Blog </a>
-			<a href="https://www.puruvj.dev/works" use:external> <WorksIcon /> Works </a>
+			<a href="https://jacobfv.github.io" use:external> <WebIcon /> Website </a>
+			<a href="https://jacobfv.github.io/blog/" use:external> <BlogIcon /> Blog </a>
+			<a href="https://jacobfv.github.io/projects/" use:external> <WorksIcon /> Projects </a>
+			<a href="https://jacobfv.github.io/resume/" use:external> <ResumeIcon /> Resume </a>
 
 			<hr />
 
-			<a href="https://www.puruvj.dev/twitter" use:external>
+			<a href="https://twitter.com/jvboid" use:external>
 				<TwitterIcon />
-				Twitter
+				X / Twitter
 			</a>
-			<a href="https://www.puruvj.dev/github" use:external> <GithubIcon /> Github </a>
-			<a href="https://www.puruvj.dev/devto" use:external> <DevToIcon /> Dev.to </a>
+			<a href="https://www.linkedin.com/in/jacob-f-valdez/" use:external>
+				<LinkedinIcon />
+				LinkedIn
+			</a>
+			<a href="https://github.com/JacobFV" use:external> <GithubIcon /> GitHub </a>
+			<a href="https://www.instagram.com/jvboid/" use:external>
+				<InstagramIcon />
+				Instagram
+			</a>
+			<a href="https://jvboid.art" use:external> <PaletteIcon /> Art </a>
+			<a href="mailto:jacob@humanrobots.ai"> <EmailIcon /> Email </a>
 		</nav>
 	</aside>
 
 	<section class="content">
-		<img height="200" width="200" src="./purus-profile/puru.webp" alt="Puru Vijay Profile pic" />
+		<img
+			class="profile-photo"
+			height="200"
+			width="200"
+			src="https://jacobfv.github.io/assets/img/prof_pic.jpg"
+			alt="Jacob F. Valdez"
+		/>
 
 		<br />
 
-		<h1>Hi, I'm Puru</h1>
+		<h1>Jacob F. Valdez</h1>
 
-		<h2>
-			I'm the creator of macOS Web, which you're on right now
-			<img src="./emojis/wink.png" alt="Wink emoji" class="emoji" />
-		</h2>
+		<h2>Software engineer building AI systems</h2>
 
 		<br /><br />
 
 		<p>
-			I am a fullstack web developer, with an infinite amount of love for frontend web development,
-			esp JavaScript, TypeScript, and for frontend frameworks like Svelte, Vue and React
-			<img src="./emojis/star-struck.png" alt="Star Struck face emoji" class="emoji" />
+			Jacob is building <a href="https://vibestartup.pro" use:external>VibeStartup</a>.
+			Previously he was API/Integration Architect at
+			<a href="https://agi.app" use:external>AGI, Inc.</a>, working on APIs, integrations,
+			and agent infrastructure for on-device mobile AI agents.
 		</p>
 
 		<br /><br />
 
 		<p>
-			However, my love for tech doesn't end there. I enjoy writing backend APIs, scripts, working
-			with databases, and my fav platforms are NodeJS, Deno and Go
+			Earlier work includes Breezy, Deepshard, Motio, and UTA research labs. He studied
+			computer science at UT Arlington and writes about science, engineering, people, and AI.
 		</p>
+
+		<div class="quick-links">
+			<a href="https://jacobfv.github.io/repos/" use:external>Repos</a>
+			<a href="https://jacobfv.github.io/papers/" use:external>Papers</a>
+			<a href="https://www.admonymous.co/jvboid" use:external>Feedback</a>
+			<a href="https://www.f6s.com/member/jacob-valdez?follow=1" use:external>F6S</a>
+		</div>
 	</section>
 </section>
 
@@ -196,29 +223,56 @@
 
 		padding: 1rem;
 
-		img {
+		.profile-photo {
 			border-radius: 50%;
+			object-fit: cover;
+			box-shadow: 0 12px 32px hsla(var(--system-color-dark-hsl), 0.18);
 		}
-	}
-
-	.emoji {
-		height: 1em;
-		width: 1em;
-
-		vertical-align: middle;
 	}
 
 	h1 {
 		font-size: 2.618rem;
 		line-height: 1.618;
+		text-align: center;
 	}
 
 	h2 {
 		font-size: 1.618rem;
 		line-height: 1.2;
+		text-align: center;
+		color: hsla(var(--system-color-dark-hsl), 0.72);
 	}
 
 	p {
+		max-width: 34rem;
 		line-height: 1.618rem;
+		text-align: center;
+
+		a {
+			color: inherit;
+			font-weight: 600;
+		}
+	}
+
+	.quick-links {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 0.5rem;
+		margin-top: 1.5rem;
+
+		a {
+			padding: 0.45rem 0.75rem;
+			border-radius: 999px;
+			background: hsla(var(--system-color-dark-hsl), 0.08);
+			color: hsla(var(--system-color-dark-hsl), 0.9);
+			text-decoration: none;
+			font-size: 0.9rem;
+			font-weight: 500;
+
+			&:hover {
+				background: hsla(var(--system-color-dark-hsl), 0.14);
+			}
+		}
 	}
 </style>
