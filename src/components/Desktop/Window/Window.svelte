@@ -32,14 +32,94 @@
 	let windowEl = $state<HTMLElement>();
 
 	const { height, width } = apps_config[app_id];
+	const resizable = apps_config[app_id].resizable !== false;
 	let ws = $derived(windowManager.windowStates[app_id]);
 
 	const remModifier = +height * 1.2 >= window.innerHeight ? 24 : 16;
+
+	const MIN_W = 220;
+	const MIN_H = 160;
 
 	const randX = rand_int(-600, 600);
 	const randY = rand_int(-100, 100);
 
 	const disabledComp = Compartment.of(() => disabled(!dragging_enabled));
+
+	const initial_x = ws?.x ?? (document.body.clientWidth / 2 + randX) / 2;
+	const initial_y = ws?.y ?? (100 + randY) / 2;
+
+	// Tracks the drag offset that neodrag should apply. We bump this during resize
+	// to keep neodrag's internal offset in sync — otherwise the next drag would
+	// "jump" because the element's transform was changed behind neodrag's back.
+	let posX = $state(initial_x);
+	let posY = $state(initial_y);
+
+	const positionComp = Compartment.of(() =>
+		position({ current: { x: posX, y: posY } }),
+	);
+
+	function startResize(edge: string, e: MouseEvent) {
+		if (!resizable || is_maximized || !windowEl) return;
+		e.preventDefault();
+		e.stopPropagation();
+		windowManager.focusApp(app_id);
+
+		// Disable neodrag so the title-bar drag handler can't fire mid-resize.
+		dragging_enabled = false;
+
+		const rect = windowEl.getBoundingClientRect();
+		const startW = rect.width;
+		const startH = rect.height;
+		const startMouseX = e.clientX;
+		const startMouseY = e.clientY;
+		const startPosX = posX;
+		const startPosY = posY;
+
+		function onMouseMove(ev: MouseEvent) {
+			if (!windowEl) return;
+			const dx = ev.clientX - startMouseX;
+			const dy = ev.clientY - startMouseY;
+
+			let newW = startW;
+			let newH = startH;
+			let newPosX = startPosX;
+			let newPosY = startPosY;
+
+			if (edge.includes('e')) newW = startW + dx;
+			if (edge.includes('w')) { newW = startW - dx; newPosX = startPosX + dx; }
+			if (edge.includes('s')) newH = startH + dy;
+			if (edge.includes('n')) { newH = startH - dy; newPosY = startPosY + dy; }
+
+			if (newW < MIN_W) {
+				if (edge.includes('w')) newPosX = startPosX + (startW - MIN_W);
+				newW = MIN_W;
+			}
+			if (newH < MIN_H) {
+				if (edge.includes('n')) newPosY = startPosY + (startH - MIN_H);
+				newH = MIN_H;
+			}
+
+			// Size: write directly to DOM for smoothness; style:width binding doesn't
+			// fight back because ws.width hasn't changed yet.
+			windowEl.style.width = `${newW}px`;
+			windowEl.style.height = `${newH}px`;
+
+			// Position: drive neodrag via posX/posY → positionComp reconfigures →
+			// position plugin's setForcedPosition keeps ctx.offset in sync.
+			if (edge.includes('w')) posX = newPosX;
+			if (edge.includes('n')) posY = newPosY;
+		}
+
+		function onMouseUp() {
+			window.removeEventListener('mousemove', onMouseMove);
+			window.removeEventListener('mouseup', onMouseUp);
+			dragging_enabled = true;
+			recordWindowGeometry();
+		}
+
+		window.addEventListener('mousemove', onMouseMove);
+		window.addEventListener('mouseup', onMouseUp);
+	}
 
 	function focusApp() {
 		windowManager.focusApp(app_id);
@@ -76,8 +156,8 @@
 			dragging_enabled = true;
 			windowEl.style.transform = minimized_transform;
 
-			windowEl.style.width = `${+width / remModifier}rem`;
-			windowEl.style.height = `${+height / remModifier}rem`;
+			windowEl.style.width = `${(ws?.width ?? +width) / remModifier}rem`;
+			windowEl.style.height = `${(ws?.height ?? +height) / remModifier}rem`;
 		}
 
 		is_maximized = !is_maximized;
@@ -106,6 +186,10 @@
 	function recordWindowGeometry() {
 		if (!windowEl || ws?.maximized) return;
 		const rect = windowEl.getBoundingClientRect();
+		// Keep posX/posY in sync with neodrag's internal offset so the next
+		// reactive flush doesn't snap the window back to a stale position.
+		posX = rect.left;
+		posY = rect.top;
 		windowManager.updateGeometry(app_id, {
 			x: rect.left,
 			y: rect.top,
@@ -133,12 +217,7 @@
 		controls({ allow: ControlFrom.selector('.app-window-drag-handle') }),
 		bounds(BoundsFrom.viewport({ bottom: -6000, top: 27.2, left: -6000, right: -6000 })),
 		disabledComp,
-		position({
-			default: {
-				x: ws?.x ?? (document.body.clientWidth / 2 + randX) / 2,
-				y: ws?.y ?? (100 + randY) / 2,
-			},
-		}),
+		positionComp,
 		events({ onDragStart: onAppDragStart, onDragEnd: onAppDragEnd }),
 	])}
 	onclick={focusApp}
@@ -150,6 +229,25 @@
 	</div>
 
 	<AppNexus {app_id} is_being_dragged={apps.is_being_dragged} />
+
+	{#if resizable && !is_maximized}
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="resize-handle resize-n" onmousedown={(e) => startResize('n', e)}></div>
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="resize-handle resize-s" onmousedown={(e) => startResize('s', e)}></div>
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="resize-handle resize-w" onmousedown={(e) => startResize('w', e)}></div>
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="resize-handle resize-e" onmousedown={(e) => startResize('e', e)}></div>
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="resize-handle resize-nw" onmousedown={(e) => startResize('nw', e)}></div>
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="resize-handle resize-ne" onmousedown={(e) => startResize('ne', e)}></div>
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="resize-handle resize-sw" onmousedown={(e) => startResize('sw', e)}></div>
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="resize-handle resize-se" onmousedown={(e) => startResize('se', e)}></div>
+	{/if}
 </section>
 
 <style>
@@ -202,4 +300,20 @@
 		/* // Necessary, as `.container` tries to apply shadow on it */
 		box-shadow: none !important;
 	}
+
+	/* Edge resize handles. .container has overflow: hidden, so handles sit inside the
+	   bounds and reach inward — wide enough (~10px edges, 18px corners) to grab reliably. */
+	.resize-handle {
+		position: absolute;
+		z-index: 1000;
+	}
+
+	.resize-n { top: 0; left: 18px; right: 18px; height: 10px; cursor: ns-resize; }
+	.resize-s { bottom: 0; left: 18px; right: 18px; height: 10px; cursor: ns-resize; }
+	.resize-w { left: 0; top: 18px; bottom: 18px; width: 10px; cursor: ew-resize; }
+	.resize-e { right: 0; top: 18px; bottom: 18px; width: 10px; cursor: ew-resize; }
+	.resize-nw { top: 0; left: 0; width: 18px; height: 18px; cursor: nwse-resize; }
+	.resize-ne { top: 0; right: 0; width: 18px; height: 18px; cursor: nesw-resize; }
+	.resize-sw { bottom: 0; left: 0; width: 18px; height: 18px; cursor: nwse-resize; }
+	.resize-se { bottom: 0; right: 0; width: 18px; height: 18px; cursor: nesw-resize; }
 </style>
