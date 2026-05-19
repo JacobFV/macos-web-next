@@ -58,13 +58,29 @@
 		position({ current: { x: posX, y: posY } }),
 	);
 
-	function startResize(edge: string, e: MouseEvent) {
+	// neodrag writes `style.translate` (not `style.transform`). The translate
+	// offset is NOT the same as `rect.left` — the element's static position
+	// (parent grid row, TopBar height, etc.) adds an extra offset. Read the
+	// translate directly so posX always means "neodrag offset" everywhere.
+	function readTranslate(): { x: number; y: number } {
+		if (!windowEl) return { x: 0, y: 0 };
+		const tr = windowEl.style.translate;
+		if (!tr) return { x: 0, y: 0 };
+		const parts = tr.split(/\s+/);
+		return { x: parseFloat(parts[0]) || 0, y: parseFloat(parts[1]) || 0 };
+	}
+
+	function startResize(edge: string, e: PointerEvent) {
 		if (!resizable || is_maximized || !windowEl) return;
+		// Stop propagation so neodrag's documentElement pointerdown listener
+		// doesn't also pick this up and start dragging the window. (controls
+		// plugin can't block reliably because the title-bar drag handle is
+		// inside the lazy-loaded AppNexus and isn't in the DOM at @attach time.)
 		e.preventDefault();
 		e.stopPropagation();
 		windowManager.focusApp(app_id);
 
-		// Disable neodrag so the title-bar drag handler can't fire mid-resize.
+		// Belt-and-suspenders: also disable neodrag for the duration of the resize.
 		dragging_enabled = false;
 
 		const rect = windowEl.getBoundingClientRect();
@@ -75,7 +91,7 @@
 		const startPosX = posX;
 		const startPosY = posY;
 
-		function onMouseMove(ev: MouseEvent) {
+		function onMove(ev: PointerEvent) {
 			if (!windowEl) return;
 			const dx = ev.clientX - startMouseX;
 			const dy = ev.clientY - startMouseY;
@@ -110,15 +126,17 @@
 			if (edge.includes('n')) posY = newPosY;
 		}
 
-		function onMouseUp() {
-			window.removeEventListener('mousemove', onMouseMove);
-			window.removeEventListener('mouseup', onMouseUp);
+		function onUp() {
+			window.removeEventListener('pointermove', onMove);
+			window.removeEventListener('pointerup', onUp);
+			window.removeEventListener('pointercancel', onUp);
 			dragging_enabled = true;
 			recordWindowGeometry();
 		}
 
-		window.addEventListener('mousemove', onMouseMove);
-		window.addEventListener('mouseup', onMouseUp);
+		window.addEventListener('pointermove', onMove);
+		window.addEventListener('pointerup', onUp);
+		window.addEventListener('pointercancel', onUp);
 	}
 
 	function focusApp() {
@@ -186,10 +204,13 @@
 	function recordWindowGeometry() {
 		if (!windowEl || ws?.maximized) return;
 		const rect = windowEl.getBoundingClientRect();
-		// Keep posX/posY in sync with neodrag's internal offset so the next
-		// reactive flush doesn't snap the window back to a stale position.
-		posX = rect.left;
-		posY = rect.top;
+		// Sync posX/posY to neodrag's actual translate offset (NOT rect.left,
+		// which includes the element's static layout offset). Otherwise the
+		// next position-compartment flush forces the translate to a viewport
+		// coord, snapping the window away by the static offset.
+		const tr = readTranslate();
+		posX = tr.x;
+		posY = tr.y;
 		windowManager.updateGeometry(app_id, {
 			x: rect.left,
 			y: rect.top,
@@ -232,21 +253,21 @@
 
 	{#if resizable && !is_maximized}
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="resize-handle resize-n" onmousedown={(e) => startResize('n', e)}></div>
+		<div class="resize-handle resize-n" onpointerdown={(e) => startResize('n', e)}></div>
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="resize-handle resize-s" onmousedown={(e) => startResize('s', e)}></div>
+		<div class="resize-handle resize-s" onpointerdown={(e) => startResize('s', e)}></div>
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="resize-handle resize-w" onmousedown={(e) => startResize('w', e)}></div>
+		<div class="resize-handle resize-w" onpointerdown={(e) => startResize('w', e)}></div>
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="resize-handle resize-e" onmousedown={(e) => startResize('e', e)}></div>
+		<div class="resize-handle resize-e" onpointerdown={(e) => startResize('e', e)}></div>
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="resize-handle resize-nw" onmousedown={(e) => startResize('nw', e)}></div>
+		<div class="resize-handle resize-nw" onpointerdown={(e) => startResize('nw', e)}></div>
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="resize-handle resize-ne" onmousedown={(e) => startResize('ne', e)}></div>
+		<div class="resize-handle resize-ne" onpointerdown={(e) => startResize('ne', e)}></div>
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="resize-handle resize-sw" onmousedown={(e) => startResize('sw', e)}></div>
+		<div class="resize-handle resize-sw" onpointerdown={(e) => startResize('sw', e)}></div>
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="resize-handle resize-se" onmousedown={(e) => startResize('se', e)}></div>
+		<div class="resize-handle resize-se" onpointerdown={(e) => startResize('se', e)}></div>
 	{/if}
 </section>
 
@@ -322,6 +343,6 @@
 	.resize-e  { right: 0;  top: 14px;  bottom: 14px; width: 10px; cursor: ew-resize; }
 	.resize-nw { top: 0;    left: 0;    width: 14px; height: 14px; cursor: nwse-resize; }
 	.resize-ne { top: 0;    right: 0;   width: 14px; height: 14px; cursor: nesw-resize; }
-	.resize-sw { bottom: 0; left: 0;    width: 14px; height: 14px; cursor: nwse-resize; }
-	.resize-se { bottom: 0; right: 0;   width: 14px; height: 14px; cursor: nesw-resize; }
+	.resize-sw { bottom: 0; left: 0;    width: 14px; height: 14px; cursor: nesw-resize; }
+	.resize-se { bottom: 0; right: 0;   width: 14px; height: 14px; cursor: nwse-resize; }
 </style>
