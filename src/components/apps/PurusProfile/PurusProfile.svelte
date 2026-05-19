@@ -120,10 +120,13 @@
 		--color: var(--system-color-light-hsl);
 
 		display: grid;
-		grid-template-columns: 13.5rem 1fr;
-		grid-template-rows: 3rem 1fr;
+		grid-template-columns: 13.5rem minmax(0, 1fr);
+		grid-template-rows: 3rem minmax(0, 1fr);
 
 		border-radius: inherit;
+		width: 100%;
+		height: 100%;
+		overflow: hidden;
 
 		background-image: linear-gradient(
 			to right,
@@ -168,6 +171,10 @@
 
 		height: calc(100% - 2.7px);
 		width: calc(13.5rem - 2.27px);
+		min-height: 0;
+		overflow-x: hidden;
+		overflow-y: auto;
+		scrollbar-gutter: stable;
 
 		margin: 1.8px 0 0px 1.8px;
 
@@ -198,6 +205,17 @@
 
 			border-top-left-radius: 0.5rem;
 			border-bottom-left-radius: 0.5rem;
+		}
+
+		&::-webkit-scrollbar {
+			width: 0.55rem;
+		}
+
+		&::-webkit-scrollbar-thumb {
+			background-color: hsla(var(--system-color-dark-hsl), 0.18);
+			border: 0.18rem solid transparent;
+			border-radius: 999px;
+			background-clip: padding-box;
 		}
 
 		nav {
@@ -258,8 +276,23 @@
 	.content {
 		grid-area: 2 / 2 / span 1 / span 1;
 
+		min-width: 0;
+		min-height: 0;
 		padding: 1.2rem;
-		overflow: auto;
+		overflow-x: hidden;
+		overflow-y: auto;
+		scrollbar-gutter: stable;
+
+		&::-webkit-scrollbar {
+			width: 0.65rem;
+		}
+
+		&::-webkit-scrollbar-thumb {
+			background-color: hsla(var(--system-color-dark-hsl), 0.2);
+			border: 0.2rem solid transparent;
+			border-radius: 999px;
+			background-clip: padding-box;
+		}
 
 		.profile-photo {
 			border-radius: 50%;
@@ -272,7 +305,7 @@
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 1.2rem;
-		height: 100%;
+		min-height: 100%;
 		align-items: stretch;
 	}
 
