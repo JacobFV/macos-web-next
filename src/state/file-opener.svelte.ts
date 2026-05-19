@@ -1,6 +1,6 @@
 /** File opener service: bridges VFS -> app launch for file opening. */
 
-import { apps } from './apps.svelte';
+import { apps, windowManager, type AppID } from './apps.svelte';
 import { get_app_for_file } from './file-registry';
 import { read_file, stat } from './vfs.svelte';
 
@@ -20,8 +20,7 @@ export function open_file(path: string): boolean {
 
 	if (node.type === 'dir') {
 		file_opener_store.pending = { path };
-		apps.open.finder = true;
-		apps.active = 'finder';
+		windowManager.openApp('finder', { path });
 		return true;
 	}
 
@@ -29,8 +28,7 @@ export function open_file(path: string): boolean {
 	if (node.name.endsWith('.app')) {
 		const app_name = node.name.replace('.app', '').toLowerCase().replace(/\s+/g, '-');
 		if (app_name in apps.open) {
-			(apps.open as Record<string, boolean>)[app_name] = true;
-			apps.active = app_name as typeof apps.active;
+			windowManager.openApp(app_name as AppID);
 			return true;
 		}
 		return false;
@@ -41,8 +39,7 @@ export function open_file(path: string): boolean {
 
 	const content = read_file(path);
 	file_opener_store.pending = { path, content: content ?? undefined };
-	apps.open[app_id] = true;
-	apps.active = app_id;
+	windowManager.openApp(app_id, { path });
 	return true;
 }
 

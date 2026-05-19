@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { apps_config } from '🍎/configs/apps/apps-config';
-	import { apps, type AppID } from '🍎/state/apps.svelte';
+	import { windowManager, type AppID } from '🍎/state/apps.svelte';
 
 	let search_query = $state('');
 	let current_page = $state(0);
@@ -27,8 +27,7 @@
 			config.external_action?.(null);
 			return;
 		}
-		apps.open[app_id] = true;
-		apps.active = app_id;
+		windowManager.openApp(app_id);
 	}
 </script>
 

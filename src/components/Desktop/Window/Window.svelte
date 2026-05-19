@@ -10,13 +10,13 @@
 		events,
 		position,
 	} from '@neodrag/svelte';
-	import { onMount, untrack } from 'svelte';
+	import { onMount } from 'svelte';
 	import { sineInOut } from 'svelte/easing';
 	import { elevation } from '🍎/actions';
 	import { apps_config } from '🍎/configs/apps/apps-config.ts';
 	import { rand_int } from '🍎/helpers/random.ts';
 	import { sleep } from '🍎/helpers/sleep';
-	import { apps, type AppID } from '🍎/state/apps.svelte.ts';
+	import { apps, windowManager, type AppID } from '🍎/state/apps.svelte.ts';
 	import { preferences } from '🍎/state/preferences.svelte.ts';
 
 	import AppNexus from '../../apps/AppNexus.svelte';
@@ -26,35 +26,23 @@
 
 	let dragging_enabled = $state(true);
 
-	let is_maximized = $state(false);
+	let is_maximized = $state(windowManager.windowStates[app_id]?.maximized ?? false);
 	let minimized_transform = $state<string>();
 
 	let windowEl = $state<HTMLElement>();
 
 	const { height, width } = apps_config[app_id];
+	let ws = $derived(windowManager.windowStates[app_id]);
 
 	const remModifier = +height * 1.2 >= window.innerHeight ? 24 : 16;
 
 	const randX = rand_int(-600, 600);
 	const randY = rand_int(-100, 100);
 
-	let defaultPosition = {
-		x: (document.body.clientWidth / 2 + randX) / 2,
-		y: (100 + randY) / 2,
-	};
-
 	const disabledComp = Compartment.of(() => disabled(!dragging_enabled));
 
-	$effect(() => {
-		apps.active_z_index;
-
-		if (apps.active === app_id) {
-			untrack(() => (apps.z_indices[app_id] = apps.active_z_index));
-		}
-	});
-
 	function focusApp() {
-		apps.active = app_id;
+		windowManager.focusApp(app_id);
 	}
 
 	function windowCloseTransition(
@@ -94,7 +82,7 @@
 
 		is_maximized = !is_maximized;
 
-		apps.fullscreen[app_id] = is_maximized;
+		windowManager.toggleMaximize(app_id);
 
 		await sleep(300);
 
@@ -102,17 +90,28 @@
 	}
 
 	function closeApp() {
-		apps.open[app_id] = false;
-		apps.fullscreen[app_id] = false;
+		windowManager.closeApp(app_id);
 	}
 
 	function onAppDragStart() {
 		focusApp();
-		apps.is_being_dragged = true;
+		windowManager.setDragging(true);
 	}
 
 	function onAppDragEnd() {
-		apps.is_being_dragged = false;
+		windowManager.setDragging(false);
+		recordWindowGeometry();
+	}
+
+	function recordWindowGeometry() {
+		if (!windowEl || ws?.maximized) return;
+		const rect = windowEl.getBoundingClientRect();
+		windowManager.updateGeometry(app_id, {
+			x: rect.left,
+			y: rect.top,
+			width: rect.width,
+			height: rect.height,
+		});
 	}
 
 	onMount(() => windowEl?.focus());
@@ -124,16 +123,22 @@
 	class="container"
 	class:dark={preferences.theme.scheme === 'dark'}
 	class:active={apps.active === app_id}
-	style:width="{+width / remModifier}rem"
-	style:height="{+height / remModifier}rem"
-	style:z-index={apps.z_indices[app_id]}
+	class:closing={ws?.closing}
+	style:width={ws?.maximized ? '100%' : `${(ws?.width ?? +width) / remModifier}rem`}
+	style:height={ws?.maximized ? 'calc(100vh - 1.7rem)' : `${(ws?.height ?? +height) / remModifier}rem`}
+	style:z-index={ws?.zIndex ?? apps.z_indices[app_id]}
 	tabindex="-1"
 	bind:this={windowEl}
 	{@attach draggable(() => [
 		controls({ allow: ControlFrom.selector('.app-window-drag-handle') }),
 		bounds(BoundsFrom.viewport({ bottom: -6000, top: 27.2, left: -6000, right: -6000 })),
 		disabledComp,
-		position({ default: defaultPosition }),
+		position({
+			default: {
+				x: ws?.x ?? (document.body.clientWidth / 2 + randX) / 2,
+				y: ws?.y ?? (100 + randY) / 2,
+			},
+		}),
 		events({ onDragStart: onAppDragStart, onDragEnd: onAppDragEnd }),
 	])}
 	onclick={focusApp}

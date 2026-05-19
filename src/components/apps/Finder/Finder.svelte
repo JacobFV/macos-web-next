@@ -18,7 +18,7 @@
 		paste_files as clipboard_paste_files,
 	} from '../../../state/clipboard.svelte';
 	import { get_file_type_label } from '../../../state/file-registry';
-	import { apps } from '../../../state/apps.svelte';
+	import { apps, windowManager, type AppID } from '../../../state/apps.svelte';
 	import { notify } from '../../../state/notifications.svelte';
 
 	const FINDER_ICON = './app-icons/finder/256.webp';
@@ -387,8 +387,7 @@
 			// Launch the app
 			const app_name = file.name.replace('.app', '').toLowerCase().replace(/\s+/g, '-');
 			if (app_name in apps.open) {
-				(apps.open as Record<string, boolean>)[app_name] = true;
-				apps.active = app_name as typeof apps.active;
+				windowManager.openApp(app_name as AppID);
 			}
 		} else {
 			// Open the file with the appropriate app

@@ -8,7 +8,7 @@
 
 	import { colors } from '🍎/configs/theme/colors.config';
 	import { wallpapers_config } from '🍎/configs/wallpapers/wallpaper.config';
-	import { apps } from '🍎/state/apps.svelte.ts';
+	import { windowManager } from '🍎/state/apps.svelte.ts';
 	import { should_show_notch } from '🍎/state/menubar.svelte';
 	import { preferences } from '🍎/state/preferences.svelte.ts';
 
@@ -42,8 +42,7 @@
 	}
 
 	function openWallpapersApp() {
-		apps.open.wallpapers = true;
-		apps.active = 'wallpapers';
+		windowManager.openApp('wallpapers');
 	}
 
 	onMount(() => containerEl?.focus());

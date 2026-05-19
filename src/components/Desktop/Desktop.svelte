@@ -7,6 +7,7 @@
 	import ContextMenu from './ContextMenu.svelte';
 	import SystemUpdate from './SystemUpdate.svelte';
 	import WindowsArea from './Window/WindowsArea.svelte';
+	import { startWindowManagerAutosave } from '🍎/state/apps.svelte';
 
 	const isMac = /(Mac|iPhone|iPod|iPad)/i.test(navigator.platform);
 
@@ -20,6 +21,8 @@
 	}
 	/** @type {HTMLElement} */
 	let mainEl;
+
+	startWindowManagerAutosave();
 </script>
 
 <div bind:this={mainEl} class="container">

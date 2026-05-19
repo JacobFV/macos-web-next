@@ -5,7 +5,7 @@
 	import { spring, tweened } from 'svelte/motion';
 	import { elevation } from '🍎/actions';
 	import { apps_config } from '🍎/configs/apps/apps-config.ts';
-	import { apps, type AppID } from '🍎/state/apps.svelte.ts';
+	import { apps, windowManager, type AppID } from '🍎/state/apps.svelte.ts';
 	import { preferences } from '🍎/state/preferences.svelte.ts';
 
 	const {
@@ -140,8 +140,7 @@
 		// For the bounce animation
 		const isAppAlreadyOpen = apps.open[app_id];
 
-		apps.open[app_id] = true;
-		apps.active = app_id;
+		windowManager.openApp(app_id);
 
 		if (isAppAlreadyOpen) return;
 
