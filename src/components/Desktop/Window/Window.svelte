@@ -302,18 +302,26 @@
 	}
 
 	/* Edge resize handles. .container has overflow: hidden, so handles sit inside the
-	   bounds and reach inward — wide enough (~10px edges, 18px corners) to grab reliably. */
+	   bounds. The dark-mode `& > :global(div)` rule on .container would otherwise apply
+	   a box-shadow + inherited radius to these — reset those so the handles are
+	   invisible and the visible hit area matches the actual pointer-event area. */
 	.resize-handle {
 		position: absolute;
 		z-index: 1000;
+		box-shadow: none !important;
+		border-radius: 0 !important;
+		background: transparent;
 	}
 
-	.resize-n { top: 0; left: 18px; right: 18px; height: 10px; cursor: ns-resize; }
-	.resize-s { bottom: 0; left: 18px; right: 18px; height: 10px; cursor: ns-resize; }
-	.resize-w { left: 0; top: 18px; bottom: 18px; width: 10px; cursor: ew-resize; }
-	.resize-e { right: 0; top: 18px; bottom: 18px; width: 10px; cursor: ew-resize; }
-	.resize-nw { top: 0; left: 0; width: 18px; height: 18px; cursor: nwse-resize; }
-	.resize-ne { top: 0; right: 0; width: 18px; height: 18px; cursor: nesw-resize; }
-	.resize-sw { bottom: 0; left: 0; width: 18px; height: 18px; cursor: nwse-resize; }
-	.resize-se { bottom: 0; right: 0; width: 18px; height: 18px; cursor: nesw-resize; }
+	/* Corner size = 14px so the NW corner barely touches the traffic-lights
+	   (which start at top: 0.75rem / left: 0.75rem = 12px). Edges butt up
+	   against corners with no gap and no overlap. */
+	.resize-n  { top: 0;    left: 14px; right: 14px; height: 10px; cursor: ns-resize; }
+	.resize-s  { bottom: 0; left: 14px; right: 14px; height: 10px; cursor: ns-resize; }
+	.resize-w  { left: 0;   top: 14px;  bottom: 14px; width: 10px; cursor: ew-resize; }
+	.resize-e  { right: 0;  top: 14px;  bottom: 14px; width: 10px; cursor: ew-resize; }
+	.resize-nw { top: 0;    left: 0;    width: 14px; height: 14px; cursor: nwse-resize; }
+	.resize-ne { top: 0;    right: 0;   width: 14px; height: 14px; cursor: nesw-resize; }
+	.resize-sw { bottom: 0; left: 0;    width: 14px; height: 14px; cursor: nwse-resize; }
+	.resize-se { bottom: 0; right: 0;   width: 14px; height: 14px; cursor: nesw-resize; }
 </style>
