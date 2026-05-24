@@ -71,6 +71,16 @@ const SURFACE_APP: Record<string, AppID> = {
 	dashboard: 'safari',
 };
 
+type VisibleStep = {
+	step: number;
+	surface: string;
+	action: string;
+	target: string;
+	payload: string;
+};
+
+const visibleSteps: VisibleStep[] = [];
+
 function isAppID(value: unknown): value is AppID {
 	return typeof value === 'string' && value in apps_config;
 }
@@ -78,6 +88,75 @@ function isAppID(value: unknown): value is AppID {
 function synthuxPath(path: string): string {
 	if (path.startsWith('/')) return path;
 	return `/Users/user/Documents/SynthUX/${path.replace(/^\/+/, '')}`;
+}
+
+function visiblePayload(args: Record<string, unknown>, fallback = ''): string {
+	const raw = args.visible_text ?? args.content ?? args.preview ?? args.text ?? args.query ?? args.title ?? args.command ?? fallback;
+	return String(raw ?? '').slice(0, 2200);
+}
+
+function renderSynthuxPanel(current: VisibleStep, goal: string): void {
+	visibleSteps.push(current);
+	while (visibleSteps.length > 8) visibleSteps.shift();
+
+	let panel = document.getElementById('synthux-execution-panel');
+	if (!panel) {
+		panel = document.createElement('section');
+		panel.id = 'synthux-execution-panel';
+		document.body.appendChild(panel);
+	}
+
+	const history = visibleSteps
+		.slice(-5)
+		.map((step) => `<li><span>${step.step}</span> ${escapeHtml(step.surface)}.${escapeHtml(step.action)} <em>${escapeHtml(step.target)}</em></li>`)
+		.join('');
+	panel.innerHTML = `
+		<style>
+			#synthux-execution-panel {
+				position: fixed;
+				right: 22px;
+				top: 54px;
+				width: 430px;
+				max-height: 80vh;
+				z-index: 2147483647;
+				background: rgba(28, 28, 30, 0.94);
+				color: #f5f5f7;
+				border: 1px solid rgba(255, 255, 255, 0.24);
+				border-radius: 12px;
+				box-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+				font: 13px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+				overflow: hidden;
+				backdrop-filter: blur(18px);
+			}
+			#synthux-execution-panel header { padding: 12px 14px; background: rgba(10, 132, 255, 0.26); border-bottom: 1px solid rgba(255,255,255,0.14); }
+			#synthux-execution-panel strong { display: block; font-size: 15px; }
+			#synthux-execution-panel .goal { color: #a6d4ff; margin-top: 4px; }
+			#synthux-execution-panel .body { padding: 12px 14px; }
+			#synthux-execution-panel .target { color: #ffd60a; margin-bottom: 8px; }
+			#synthux-execution-panel pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 270px; overflow: auto; background: rgba(0,0,0,0.42); padding: 10px; border-radius: 8px; }
+			#synthux-execution-panel ol { margin: 10px 0 0; padding-left: 18px; color: #d1d1d6; }
+			#synthux-execution-panel li span { color: #64d2ff; font-variant-numeric: tabular-nums; }
+			#synthux-execution-panel em { color: #f2f2f7; font-style: normal; }
+		</style>
+		<header>
+			<strong>Step ${current.step}: ${escapeHtml(current.surface)}.${escapeHtml(current.action)}</strong>
+			<div class="goal">${escapeHtml(goal)}</div>
+		</header>
+		<div class="body">
+			<div class="target">Target: ${escapeHtml(current.target)}</div>
+			<pre>${escapeHtml(current.payload || '(no visible payload)')}</pre>
+			<ol>${history}</ol>
+		</div>
+	`;
+}
+
+function escapeHtml(value: string): string {
+	return value
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#39;');
 }
 
 function ensureParentDirs(path: string): void {
@@ -159,33 +238,44 @@ function executeSynthuxTargetAction(requestId: string, action: Record<string, un
 	const targetAction = String(action.action ?? '');
 	const target = String(action.target ?? '');
 	const args = (action.args && typeof action.args === 'object' ? action.args : {}) as Record<string, unknown>;
+	const visible = visiblePayload(args, target);
+	renderSynthuxPanel(
+		{
+			step: Number(action.step ?? visibleSteps.length + 1),
+			surface,
+			action: targetAction,
+			target,
+			payload: visible,
+		},
+		String(action.goal ?? ''),
+	);
 	const app = openSurfaceApp(surface);
 
 	if (surface === 'editor' && targetAction === 'open_file') {
 		const path = synthuxPath(target);
 		const content = read_file(path) ?? '';
 		windowManager.openApp(app, { path });
-		return ok(requestId, 'file.opened', path, snapshot({ app, path, chars: content.length }), `${apps_config[app].title} opened ${path}.`);
+		return ok(requestId, 'file.opened', path, snapshot({ app, path, chars: content.length, visibleText: visible }), `${apps_config[app].title} opened ${path}.`);
 	}
 	if (surface === 'editor' && targetAction === 'replace_buffer') {
 		const path = synthuxPath(target);
-		const content = String(args.preview ?? `<buffer:${String(args.chars ?? 0)} chars>`);
+		const content = String(args.content ?? args.preview ?? `<buffer:${String(args.chars ?? 0)} chars>`);
 		ensureParentDirs(path);
 		const written = write_file(path, content);
 		if (!written) throw new Error(`could not write ${path}`);
 		windowManager.openApp(app, { path });
-		return ok(requestId, 'buffer.replaced', path, snapshot({ app, path, chars: content.length }), `${apps_config[app].title} replaced ${path}.`);
+		return ok(requestId, 'buffer.replaced', path, snapshot({ app, path, chars: content.length, visibleText: visible }), `${apps_config[app].title} replaced ${path}.`);
 	}
 	if (surface === 'editor' && targetAction === 'save_file') {
 		const path = synthuxPath(target);
-		return ok(requestId, 'file.saved', path, snapshot({ app, path }), `${path} is saved in the macOS VFS.`);
+		return ok(requestId, 'file.saved', path, snapshot({ app, path, visibleText: visible }), `${path} is saved in the macOS VFS.`);
 	}
 	if (surface === 'terminal' && targetAction === 'run_command') {
 		return ok(
 			requestId,
 			'process.exited',
 			target,
-			snapshot({ app, command: args.command, exitCode: args.exit_code ?? 0 }),
+			snapshot({ app, command: args.command, exitCode: args.exit_code ?? 0, visibleText: visible }),
 			`Terminal ran ${String(args.command ?? target)}.`,
 		);
 	}
@@ -201,7 +291,7 @@ function executeSynthuxTargetAction(requestId: string, action: Record<string, un
 			targetAction === 'set_time_range' ? 'dashboard.range_set' :
 			targetAction === 'drill_into_alert' ? 'dashboard.alert_drilled' :
 			'app.action';
-		return ok(requestId, event, target, snapshot({ app, args }), `${apps_config[app].title} executed ${surface}.${targetAction}.`);
+		return ok(requestId, event, target, snapshot({ app, args, visibleText: visible }), `${apps_config[app].title} executed ${surface}.${targetAction}.`);
 	}
 	if (surface === 'notion' || surface === 'slack') {
 		const event =
@@ -214,10 +304,10 @@ function executeSynthuxTargetAction(requestId: string, action: Record<string, un
 			targetAction === 'scroll_history' ? 'channel.scrolled' :
 			targetAction === 'react_to_message' ? 'message.reacted' :
 			'app.action';
-		return ok(requestId, event, target, snapshot({ app, args }), `${apps_config[app].title} executed ${surface}.${targetAction}.`);
+		return ok(requestId, event, target, snapshot({ app, args, visibleText: visible }), `${apps_config[app].title} executed ${surface}.${targetAction}.`);
 	}
 
-	return ok(requestId, 'app.action', target, snapshot({ app, args }), `${apps_config[app].title} accepted ${surface}.${targetAction}.`);
+	return ok(requestId, 'app.action', target, snapshot({ app, args, visibleText: visible }), `${apps_config[app].title} accepted ${surface}.${targetAction}.`);
 }
 
 function executeSynthuxCommand(data: SynthuxCommandMessage): SynthuxCommandResultMessage {
