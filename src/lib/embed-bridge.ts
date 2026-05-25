@@ -6,6 +6,7 @@
  */
 
 import { windowManager, apps, type AppID } from '🍎/state/apps.svelte';
+import { apps_config } from '🍎/configs/apps/apps-config';
 
 interface SynthuxCommandMessage {
 	source: 'synthux-executor';
@@ -14,6 +15,13 @@ interface SynthuxCommandMessage {
 	command: {
 		type: 'synthux.getState';
 	};
+}
+
+interface SynthuxLaunchMessage {
+	source: 'synthux-executor';
+	type: 'synthux-launch';
+	appId: string;
+	surface?: string;
 }
 
 interface SynthuxCommandResultMessage {
@@ -84,16 +92,53 @@ function stateResult(requestId: string): SynthuxCommandResultMessage {
 	};
 }
 
+function isLaunch(data: unknown): data is SynthuxLaunchMessage {
+	return (
+		typeof data === 'object' &&
+		data !== null &&
+		(data as Record<string, unknown>).source === 'synthux-executor' &&
+		(data as Record<string, unknown>).type === 'synthux-launch' &&
+		typeof (data as Record<string, unknown>).appId === 'string'
+	);
+}
+
+function launchApp(appId: string): boolean {
+	if (!(appId in apps_config)) {
+		console.warn('[synthux] unknown appId', appId);
+		return false;
+	}
+	try {
+		windowManager.openApp(appId as AppID);
+		return true;
+	} catch (error) {
+		console.warn('[synthux] launch failed', appId, error);
+		return false;
+	}
+}
+
 function handleMessage(event: MessageEvent): void {
-	if (!isInboundMessage(event.data)) return;
-	postToParent(stateResult(event.data.requestId));
+	if (isInboundMessage(event.data)) {
+		postToParent(stateResult(event.data.requestId));
+		return;
+	}
+	if (isLaunch(event.data)) {
+		launchApp(event.data.appId);
+		return;
+	}
 }
 
 export function initEmbedBridge(): () => void {
 	window.addEventListener('message', handleMessage);
+	(window as unknown as { __synthuxLaunchApp?: (appId: string, surface?: string) => boolean }).__synthuxLaunchApp =
+		(appId: string) => launchApp(appId);
 	postToParent(stateResult('synthux-ready'));
 
 	return () => {
 		window.removeEventListener('message', handleMessage);
+		try {
+			delete (window as unknown as { __synthuxLaunchApp?: unknown }).__synthuxLaunchApp;
+		} catch {
+			// ignore
+		}
 	};
 }
