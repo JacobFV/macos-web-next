@@ -2,6 +2,8 @@
 
 # Mac OS Ventura Web
 
+> Project page: [jacobfv.com/projects/macos-web-next](https://jacobfv.com/projects/macos-web-next) · Used as a native execution substrate by [SynthUX](https://jacobfv.com/projects/synthux) ([github.com/JacobFV/synthux](https://github.com/JacobFV/synthux))
+
 This open source project aims to replicate some of the Mac OS(Monterey, at the time of writing)'s desktop experience on web, using Svelte!
 
 🔗🔗 [macos-web.app](https://macos.now.sh)
