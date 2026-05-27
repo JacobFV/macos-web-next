@@ -266,6 +266,25 @@
 	}
 
 	// --- Navigation ---
+	function rewrite_github(target: string): string {
+		// Route github.com URLs through the SynthUX virtual internet so the
+		// iframe can actually render (real github.com sends X-Frame-Options).
+		const net = (window as any).__synthuxInternet;
+		if (!net || !net.enabled || !net.url) return target;
+		try {
+			const u = new URL(target);
+			if (!u.hostname.endsWith('github.com')) return target;
+			const parts = u.pathname.split('/').filter(Boolean);
+			const owner = parts[0] || 'acme';
+			const repo = parts[1] || 'api';
+			let view = 'overview';
+			if (parts[2] === 'pulls') view = 'pulls';
+			else if (parts[2] === 'pull' && parts[3]) return `${net.url}/web/github/${owner}/${repo}/pull/${parts[3]}`;
+			else if (parts[2]) view = parts[2];
+			return `${net.url}/web/github/${owner}/${repo}?view=${encodeURIComponent(view)}`;
+		} catch { return target; }
+	}
+
 	function navigate(input?: string) {
 		const raw = input ?? url_input_value;
 		if (!raw.trim()) return;
@@ -276,6 +295,7 @@
 		} else if (!target.startsWith('http://') && !target.startsWith('https://')) {
 			target = 'https://' + target;
 		}
+		target = rewrite_github(target);
 
 		const tab_index = tabs.findIndex((t) => t.id === active_tab_id);
 		if (tab_index === -1) return;
