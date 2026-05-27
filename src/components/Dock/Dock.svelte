@@ -30,8 +30,14 @@
 	const container_size_rem = $derived(((dock_size / 48) * 5.2).toFixed(2));
 
 	$effect(() => {
-		// Due to how pointer-events: none works, if dock auto opens, you move away, it won't close automatically.
-		// So close it manually if mouse pointer goes out of the dock area.
+		// Auto-hide off → dock is always visible, full stop. No edge-distance
+		// math, no fullscreen exception. The user explicitly disabled hiding.
+		if (!dock_auto_hide) {
+			untrack(() => (is_dock_hidden.value = false));
+			return;
+		}
+
+		// Close the auto-opened dock if the cursor leaves the dock area.
 		if (is_vertical) {
 			const edge_dist = dock_position === 'left'
 				? mouseX
@@ -45,29 +51,7 @@
 			}
 		}
 
-		/**
-		 * if mouseX != null then show the dock. No matter what
-		 * When it becomes null, Then use the mouseY and bodyHeight to determine if the dock should be hidden
-		 */
 		if (dock_mouse_x !== null) {
-			untrack(() => (is_dock_hidden.value = false));
-			return;
-		}
-
-		// When auto_hide is enabled, always hide the dock when mouse moves away
-		if (dock_auto_hide) {
-			if (is_vertical) {
-				const edge_dist = dock_position === 'left'
-					? mouseX
-					: bodyWidth - mouseX;
-				untrack(() => (is_dock_hidden.value = edge_dist > HIDDEN_DOCK_THRESHOLD));
-			} else {
-				untrack(() => (is_dock_hidden.value = Math.abs(mouseY - bodyHeight) > HIDDEN_DOCK_THRESHOLD));
-			}
-			return;
-		}
-
-		if (!Object.values(apps.fullscreen).some(Boolean)) {
 			untrack(() => (is_dock_hidden.value = false));
 			return;
 		}
