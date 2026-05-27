@@ -20,10 +20,24 @@
 		vertical?: boolean;
 	} = $props();
 
-	// Scale the base icon width proportionally to the dock size preference.
-	// Default dock_size is 48, which maps to the original 57.6px base width.
+	// Auto-shrink the dock so all icons + 16px padding fit the viewport.
+	// Default dock_size is 48 (-> 57.6px base width); cap so that
+	// (icon_count * base_width) + 32 padding <= window.innerWidth.
 	const default_base_width = 57.6;
-	const base_width = $derived((preferences.dock.size / 48) * default_base_width);
+	let viewport_w = $state(typeof window !== 'undefined' ? window.innerWidth : 1440);
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		const onResize = () => { viewport_w = window.innerWidth; };
+		window.addEventListener('resize', onResize);
+		return () => window.removeEventListener('resize', onResize);
+	});
+	const icon_count = $derived(Object.keys(apps_config).length);
+	const dock_pref_width = $derived((preferences.dock.size / 48) * default_base_width);
+	const fit_width = $derived(Math.max(28, Math.min(
+		dock_pref_width,
+		(viewport_w - 64) / Math.max(1, icon_count),
+	)));
+	const base_width = $derived(fit_width);
 
 	const distance_limit = $derived(base_width * 6);
 	const beyond_the_distance_limit = $derived(distance_limit + 1);
@@ -38,13 +52,14 @@
 		distance_limit,
 	]);
 
+	// Softer magnification: peak at 1.4x instead of 2x.
 	const get_width_output = $derived([
 		base_width,
-		base_width * 1.1,
-		base_width * 1.414,
-		base_width * 2,
-		base_width * 1.414,
-		base_width * 1.1,
+		base_width * 1.05,
+		base_width * 1.18,
+		base_width * 1.4,
+		base_width * 1.18,
+		base_width * 1.05,
 		base_width,
 	]);
 
