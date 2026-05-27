@@ -29,16 +29,16 @@ const vscode = create_app_config({
 	title: 'VSCode',
 	resizable: true,
 
-	height: 600,
-	width: 800,
+	height: 760,
+	width: 1200,
 });
 
 const finder = create_app_config({
 	title: 'Finder',
 	resizable: true,
 
-	height: 560,
-	width: 900,
+	height: 700,
+	width: 1100,
 });
 
 const safari = create_app_config({
@@ -53,32 +53,32 @@ const terminal = create_app_config({
 	title: 'Terminal',
 	resizable: true,
 
-	height: 400,
-	width: 640,
+	height: 600,
+	width: 900,
 });
 
 const notes = create_app_config({
 	title: 'Notes',
 	resizable: true,
 
-	height: 600,
-	width: 950,
+	height: 720,
+	width: 1150,
 });
 
 const messages = create_app_config({
 	title: 'Messages',
 	resizable: true,
 
-	height: 550,
-	width: 850,
+	height: 720,
+	width: 1100,
 });
 
 const mail = create_app_config({
 	title: 'Mail',
 	resizable: true,
 
-	height: 650,
-	width: 1000,
+	height: 760,
+	width: 1180,
 });
 
 const photos = create_app_config({
@@ -165,8 +165,8 @@ const keynote = create_app_config({
 	title: 'Keynote',
 	resizable: true,
 
-	height: 600,
-	width: 900,
+	height: 720,
+	width: 1180,
 });
 
 const launchpad = create_app_config({
@@ -190,8 +190,8 @@ const preview = create_app_config({
 	title: 'Preview',
 	resizable: true,
 
-	height: 550,
-	width: 700,
+	height: 720,
+	width: 1000,
 });
 
 const purusTwitter = create_app_config({
