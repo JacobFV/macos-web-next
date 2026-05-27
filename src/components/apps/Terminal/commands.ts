@@ -989,6 +989,61 @@ function cmd_git(args: string[], _state: TerminalState): CommandResult {
 	if (args.length === 0 || args[0] === '--version') {
 		return { lines: ['git version 2.43.0'] };
 	}
+	if (args[0] === 'add') {
+		return { lines: [] };
+	}
+	if (args[0] === 'commit') {
+		const m_idx = args.indexOf('-m');
+		const am_idx = args.indexOf('-am');
+		const msg = (m_idx >= 0 ? args.slice(m_idx + 1) : am_idx >= 0 ? args.slice(am_idx + 1) : []).join(' ').replace(/^['"]|['"]$/g, '') || 'commit';
+		const sha = Math.random().toString(16).slice(2, 9);
+		return { lines: [
+			`[main ${sha}] ${msg}`,
+			` 1 file changed, 1 insertion(+)`,
+		] };
+	}
+	if (args[0] === 'push') {
+		const remote = args[1] || 'origin';
+		const branch = args[2] || 'main';
+		return { lines: [
+			`Enumerating objects: 5, done.`,
+			`Counting objects: 100% (5/5), done.`,
+			`Delta compression using up to 8 threads`,
+			`Compressing objects: 100% (3/3), done.`,
+			`Writing objects: 100% (3/3), 412 bytes | 412.00 KiB/s, done.`,
+			`Total 3 (delta 2), reused 0 (delta 0), pack-reused 0`,
+			`To github.com:acme/api.git`,
+			`   a1b2c3d..e4f5g6h  ${branch} -> ${branch}`,
+		] };
+	}
+	if (args[0] === 'pull') {
+		return { lines: [
+			'Already up to date.',
+		] };
+	}
+	if (args[0] === 'fetch') {
+		return { lines: [
+			'From github.com:acme/api',
+			' * [new branch]      main       -> origin/main',
+		] };
+	}
+	if (args[0] === 'checkout') {
+		const target = args.slice(1).filter(a => !a.startsWith('-')).join(' ') || 'main';
+		return { lines: [
+			`Switched to branch '${target}'`,
+		] };
+	}
+	if (args[0] === 'clone') {
+		const repo = args[1] || 'repo';
+		const name = repo.split('/').pop()?.replace(/\.git$/, '') || 'repo';
+		return { lines: [
+			`Cloning into '${name}'...`,
+			`remote: Enumerating objects: 142, done.`,
+			`remote: Counting objects: 100% (142/142), done.`,
+			`Receiving objects: 100% (142/142), 28.41 KiB | 5.68 MiB/s, done.`,
+			`Resolving deltas: 100% (75/75), done.`,
+		] };
+	}
 	if (args[0] === 'status') {
 		return { lines: [
 			'On branch main',
@@ -1486,6 +1541,97 @@ function cmd_cal(_args: string[], _state: TerminalState): CommandResult {
 	return { lines: [header, days_header, ...weeks] };
 }
 
+function cmd_pytest(args: string[], _state: TerminalState): CommandResult {
+	const quiet = args.includes('-q') || args.includes('--quiet');
+	const verbose = args.includes('-v') || args.includes('--verbose');
+	const k_idx = args.indexOf('-k');
+	const filter = k_idx >= 0 ? args[k_idx + 1] : '';
+	const lines: string[] = [];
+	const ran = Math.floor(Math.random() * 8) + 4;
+	const passed = ran - Math.floor(Math.random() * 2);
+	const failed = ran - passed;
+	const elapsed = (Math.random() * 2 + 0.4).toFixed(2);
+
+	if (!quiet) {
+		lines.push('============================= test session starts ==============================');
+		lines.push('platform darwin -- Python 3.12.1, pytest-7.4.4, pluggy-1.3.0');
+		lines.push(`rootdir: ${'/Users/user/repo'}`);
+		if (filter) lines.push(`pytest -k ${filter}`);
+		lines.push(`collected ${ran} items`);
+		lines.push('');
+	}
+	for (let i = 0; i < ran; i++) {
+		const ok = i < passed;
+		if (verbose) {
+			lines.push(`tests/test_unit.py::test_case_${i} ${ok ? colorize('PASSED', 'green') : colorize('FAILED', 'red')}`);
+		} else {
+			lines.push(`tests/test_unit.py ${ok ? colorize('.', 'green') : colorize('F', 'red')}`);
+		}
+	}
+	lines.push('');
+	if (failed === 0) {
+		lines.push(colorize(`============================== ${ran} passed in ${elapsed}s ==============================`, 'green'));
+	} else {
+		lines.push(colorize(`========================= ${failed} failed, ${passed} passed in ${elapsed}s =========================`, 'red'));
+	}
+	return { lines };
+}
+
+function cmd_npm(args: string[], _state: TerminalState): CommandResult {
+	if (args[0] === '--version' || args[0] === '-v') return { lines: ['10.2.5'] };
+	if (args[0] === 'install' || args[0] === 'i') {
+		const pkg = args[1] || '<all>';
+		return { lines: [
+			`added 142 packages, and audited 143 packages in 1s`,
+			``,
+			`28 packages are looking for funding`,
+			`  run \`npm fund\` for details`,
+			`found 0 vulnerabilities`,
+		] };
+	}
+	if (args[0] === 'run') {
+		const script = args[1] || 'start';
+		return { lines: [
+			`> ${script}`,
+			`> echo "running ${script}"`,
+			``,
+			`running ${script}`,
+		] };
+	}
+	if (args[0] === 'test') {
+		return cmd_pytest(['-q'], _state); // close enough
+	}
+	if (args[0] === 'build') {
+		return { lines: [
+			`> build`,
+			`> vite build`,
+			``,
+			colorize(`vite v5.4.10 building for production...`, 'cyan'),
+			`✓ 42 modules transformed.`,
+			`dist/index.html                  0.62 kB`,
+			`dist/assets/index-abc123.css     8.10 kB`,
+			`dist/assets/index-abc123.js     142.78 kB`,
+			`✓ built in 1.42s`,
+		] };
+	}
+	return { lines: ['Usage: npm <command>', '', 'npm install', 'npm run <script>', 'npm test', 'npm build'] };
+}
+
+function cmd_pnpm(args: string[], state: TerminalState): CommandResult {
+	if (args[0] === '--version' || args[0] === '-v') return { lines: ['8.15.1'] };
+	return cmd_npm(args, state);
+}
+
+function cmd_make(args: string[], _state: TerminalState): CommandResult {
+	const target = args[0] || 'all';
+	return { lines: [
+		`make[1]: Entering directory '/Users/user/repo'`,
+		`gcc -Wall -O2 -c main.c -o main.o`,
+		`gcc -Wall -O2 main.o -o ${target}`,
+		`make[1]: Leaving directory '/Users/user/repo'`,
+	] };
+}
+
 function cmd_help(_args: string[], _state: TerminalState): CommandResult {
 	const cmds = [
 		['ls', 'List directory contents'],
@@ -1609,6 +1755,11 @@ export const COMMANDS: Record<string, CommandFn> = {
 	file: cmd_file,
 	cal: cmd_cal,
 	help: cmd_help,
+	pytest: cmd_pytest,
+	npm: cmd_npm,
+	pnpm: cmd_pnpm,
+	yarn: cmd_npm,
+	make: cmd_make,
 };
 
 // Tab completion helpers
