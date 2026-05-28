@@ -169,6 +169,14 @@ const keynote = create_app_config({
 	width: 1180,
 });
 
+const numbers = create_app_config({
+	title: 'Numbers',
+	resizable: true,
+
+	height: 720,
+	width: 1100,
+});
+
 const launchpad = create_app_config({
 	title: 'Launchpad',
 	resizable: true,
@@ -246,6 +254,7 @@ export const apps_config = {
 	tv,
 	contacts,
 	keynote,
+	numbers,
 	launchpad,
 	devutils,
 	preview,

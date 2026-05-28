@@ -94,14 +94,16 @@ function clamp_window_state(state: PersistedWindowState, id: AppID): PersistedWi
 	const defaultHeight = Number(config.height ?? 500);
 	const maxW = usable_width();
 	const maxH = usable_height();
+	const vw = globalThis.innerWidth || 1280;
+	const vh = globalThis.innerHeight || 800;
 	const width = Math.min(Math.max(state.width || defaultWidth, 220), maxW);
 	const height = Math.min(Math.max(state.height || defaultHeight, 160), maxH);
-	const x = Math.max(SIDE_RESERVE,
-		Math.min(state.x || 0,
-		         Math.max(SIDE_RESERVE, (globalThis.innerWidth || 1280) - 80)));
-	const y = Math.max(TOP_RESERVE,
-		Math.min(state.y || 80,
-		         Math.max(TOP_RESERVE, (globalThis.innerHeight || 800) - BOTTOM_RESERVE - 80)));
+	// Pin x/y so the *whole* window (x+width, y+height) stays inside the
+	// usable rect: [SIDE_RESERVE, vw-SIDE_RESERVE] × [TOP_RESERVE, vh-BOTTOM_RESERVE].
+	const maxX = Math.max(SIDE_RESERVE, vw - SIDE_RESERVE - width);
+	const maxY = Math.max(TOP_RESERVE, vh - BOTTOM_RESERVE - height);
+	const x = Math.max(SIDE_RESERVE, Math.min(state.x || SIDE_RESERVE, maxX));
+	const y = Math.max(TOP_RESERVE, Math.min(state.y || TOP_RESERVE, maxY));
 	return { x, y, width, height, maximized: !!state.maximized };
 }
 
@@ -124,6 +126,7 @@ export const apps = $state({
 		tv: false,
 		contacts: false,
 		keynote: false,
+		numbers: false,
 		launchpad: false,
 		devutils: false,
 		preview: false,
@@ -166,6 +169,7 @@ export const apps = $state({
 		tv: 0,
 		contacts: 0,
 		keynote: 0,
+		numbers: 0,
 		launchpad: 0,
 		devutils: 0,
 		preview: 0,
@@ -202,6 +206,7 @@ export const apps = $state({
 		tv: false,
 		contacts: false,
 		keynote: false,
+		numbers: false,
 		launchpad: false,
 		devutils: false,
 		preview: false,

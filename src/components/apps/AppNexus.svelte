@@ -78,6 +78,10 @@
 	{#await import('./Keynote/Keynote.svelte') then { default: Keynote }}
 		<Keynote />
 	{/await}
+{:else if app_id === 'numbers'}
+	{#await import('./Numbers/Numbers.svelte') then { default: Numbers }}
+		<Numbers />
+	{/await}
 {:else if app_id === 'launchpad'}
 	{#await import('./Launchpad/Launchpad.svelte') then { default: Launchpad }}
 		<Launchpad />

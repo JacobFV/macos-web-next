@@ -36,7 +36,47 @@
 		{ label: 'Q4', value: 92, color: '#ff3b30' },
 	];
 
+	type SlideContent = {
+		title: string;
+		body: string;
+		notes: string;
+	};
+
+	const default_titles: Record<SlideType, string> = {
+		title: 'Quarterly Review',
+		bullets: 'Key Metrics',
+		chart: 'Revenue by Quarter',
+		'image-text': 'Product Update',
+		quote: 'Innovation distinguishes between a leader and a follower.',
+		thankyou: 'Thank You',
+	};
+
+	const default_bodies: Record<SlideType, string> = {
+		title: 'Q4 2024',
+		bullets:
+			'Revenue grew 34% year-over-year to $18.2M\nCustomer retention rate improved to 94.2%\nNew markets launched in APAC and EMEA regions\nTeam expanded from 45 to 72 employees',
+		chart: 'Q1 $13M · Q2 $16M · Q3 $11M · Q4 $18M',
+		'image-text':
+			'Our new platform features a redesigned dashboard with real-time analytics, improved collaboration tools, and an AI-powered assistant.\nLaunching in Q1 2025',
+		quote: '-- Sarah Chen, CEO',
+		thankyou: 'Questions & Discussion',
+	};
+
+	let slide_content = $state<Record<number, SlideContent>>(
+		Object.fromEntries(
+			slides.map((s) => [
+				s.id,
+				{
+					title: default_titles[s.type],
+					body: default_bodies[s.type],
+					notes: '',
+				},
+			]),
+		),
+	);
+
 	const current_slide = $derived(slides[selected_slide]);
+	const current_content = $derived(slide_content[current_slide.id]);
 
 	function add_slide() {
 		// Noop for UI demo
@@ -70,63 +110,10 @@
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 	<div class="presentation-overlay" onkeydown={handle_presentation_key} tabindex="0">
 		<div class="presentation-slide" style:background={current_slide.bg}>
-			{#if current_slide.type === 'title'}
-				<div class="slide-inner title-slide dark-text">
-					<h1>Quarterly Review</h1>
-					<p class="subtitle">Q4 2024</p>
-					<div class="title-deco"><div class="deco-line"></div></div>
-				</div>
-			{:else if current_slide.type === 'bullets'}
-				<div class="slide-inner bullets-slide">
-					<h2>Key Metrics</h2>
-					<ul class="bullet-list">
-						<li><span class="bullet-dot" style:background="#007aff"></span>Revenue grew 34% year-over-year to $18.2M</li>
-						<li><span class="bullet-dot" style:background="#34c759"></span>Customer retention rate improved to 94.2%</li>
-						<li><span class="bullet-dot" style:background="#ff9500"></span>New markets launched in APAC and EMEA regions</li>
-						<li><span class="bullet-dot" style:background="#ff3b30"></span>Team expanded from 45 to 72 employees</li>
-					</ul>
-				</div>
-			{:else if current_slide.type === 'chart'}
-				<div class="slide-inner chart-slide">
-					<h2>Revenue by Quarter</h2>
-					<div class="chart-container">
-						{#each chart_data as bar}
-							<div class="bar-group">
-								<div class="bar-wrapper">
-									<div class="bar" style:height="{bar.value}%" style:background-color={bar.color}></div>
-								</div>
-								<span class="bar-label">{bar.label}</span>
-								<span class="bar-value">${Math.round(bar.value * 0.2)}M</span>
-							</div>
-						{/each}
-					</div>
-				</div>
-			{:else if current_slide.type === 'image-text'}
-				<div class="slide-inner image-text-slide">
-					<div class="image-placeholder">
-						<div class="gradient-placeholder"></div>
-					</div>
-					<div class="text-content">
-						<h2>Product Update</h2>
-						<p>Our new platform features a redesigned dashboard with real-time analytics, improved collaboration tools, and an AI-powered assistant.</p>
-						<p class="text-muted">Launching in Q1 2025</p>
-					</div>
-				</div>
-			{:else if current_slide.type === 'quote'}
-				<div class="slide-inner quote-slide">
-					<div class="quote-mark">"</div>
-					<p class="quote-text">Innovation distinguishes between a leader and a follower. Our team has consistently pushed the boundaries of what's possible.</p>
-					<p class="quote-author">-- Sarah Chen, CEO</p>
-				</div>
-			{:else if current_slide.type === 'thankyou'}
-				<div class="slide-inner thankyou-slide dark-text">
-					<h1>Thank You</h1>
-					<p class="subtitle">Questions & Discussion</p>
-					<div class="contact-info">
-						<span>team@company.com</span>
-					</div>
-				</div>
-			{/if}
+			<div class="slide-inner present-slide" class:dark-text={current_slide.dark}>
+				<h1 class="present-title">{current_content.title}</h1>
+				<p class="present-body">{current_content.body}</p>
+			</div>
 		</div>
 		<div class="presentation-controls">
 			<button class="pres-btn" onclick={prev_slide}>
@@ -256,66 +243,33 @@
 			<div class="canvas-area">
 				<div
 					class="slide-canvas"
+					class:dark-canvas={current_slide.dark}
 					style:background={current_slide.bg}
 					style:transform="scale({zoom_pct / 100})"
 				>
-					{#if current_slide.type === 'title'}
-						<div class="slide-inner title-slide dark-text">
-							<h1>Quarterly Review</h1>
-							<p class="subtitle">Q4 2024</p>
-							<div class="title-deco"><div class="deco-line"></div></div>
-						</div>
-					{:else if current_slide.type === 'bullets'}
-						<div class="slide-inner bullets-slide">
-							<h2>Key Metrics</h2>
-							<ul class="bullet-list">
-								<li><span class="bullet-dot" style:background="#007aff"></span>Revenue grew 34% year-over-year to $18.2M</li>
-								<li><span class="bullet-dot" style:background="#34c759"></span>Customer retention rate improved to 94.2%</li>
-								<li><span class="bullet-dot" style:background="#ff9500"></span>New markets launched in APAC and EMEA regions</li>
-								<li><span class="bullet-dot" style:background="#ff3b30"></span>Team expanded from 45 to 72 employees</li>
-							</ul>
-						</div>
-					{:else if current_slide.type === 'chart'}
-						<div class="slide-inner chart-slide">
-							<h2>Revenue by Quarter</h2>
-							<div class="chart-container">
-								{#each chart_data as bar}
-									<div class="bar-group">
-										<div class="bar-wrapper">
-											<div class="bar" style:height="{bar.value}%" style:background-color={bar.color}></div>
-										</div>
-										<span class="bar-label">{bar.label}</span>
-										<span class="bar-value">${Math.round(bar.value * 0.2)}M</span>
-									</div>
-								{/each}
-							</div>
-						</div>
-					{:else if current_slide.type === 'image-text'}
-						<div class="slide-inner image-text-slide">
-							<div class="image-placeholder">
-								<div class="gradient-placeholder"></div>
-							</div>
-							<div class="text-content">
-								<h2>Product Update</h2>
-								<p>Our new platform features a redesigned dashboard with real-time analytics, improved collaboration tools, and an AI-powered assistant.</p>
-								<p class="text-muted">Launching in Q1 2025</p>
-							</div>
-						</div>
-					{:else if current_slide.type === 'quote'}
-						<div class="slide-inner quote-slide">
-							<div class="quote-mark">"</div>
-							<p class="quote-text">Innovation distinguishes between a leader and a follower. Our team has consistently pushed the boundaries of what's possible.</p>
-							<p class="quote-author">-- Sarah Chen, CEO</p>
-						</div>
-					{:else if current_slide.type === 'thankyou'}
-						<div class="slide-inner thankyou-slide dark-text">
-							<h1>Thank You</h1>
-							<p class="subtitle">Questions & Discussion</p>
-							<div class="contact-info">
-								<span>team@company.com</span>
-							</div>
-						</div>
-					{/if}
+					<div class="slide-inner edit-slide">
+						<textarea
+							class="slide-title-input"
+							bind:value={slide_content[current_slide.id].title}
+							placeholder="Slide title"
+							rows="2"
+						></textarea>
+						<textarea
+							class="slide-body-input"
+							bind:value={slide_content[current_slide.id].body}
+							placeholder="Slide body"
+						></textarea>
+					</div>
+				</div>
+
+				<div class="notes-pane">
+					<label class="notes-label" for="kn-notes">Presenter Notes</label>
+					<textarea
+						id="kn-notes"
+						class="slide-notes-input"
+						bind:value={slide_content[current_slide.id].notes}
+						placeholder="Add speaker notes for this slide…"
+					></textarea>
 				</div>
 			</div>
 		</div>
@@ -927,6 +881,143 @@
 				border-radius: 20px;
 			}
 		}
+	}
+
+	/* ── Editable slide ── */
+	.canvas-area {
+		flex-direction: column;
+		gap: 16px;
+	}
+
+	.edit-slide {
+		gap: 16px;
+		padding: 36px 48px;
+	}
+
+	.slide-title-input {
+		width: 100%;
+		border: 1px solid transparent;
+		background: transparent;
+		font-family: var(--system-font-family);
+		font-size: 36px;
+		font-weight: 700;
+		text-align: center;
+		color: #1c1c1e;
+		resize: none;
+		outline: none;
+		padding: 4px 8px;
+		border-radius: 6px;
+
+		&:hover {
+			border-color: rgba(0, 122, 255, 0.3);
+		}
+
+		&:focus {
+			border-color: #007aff;
+			background: rgba(255, 255, 255, 0.5);
+		}
+	}
+
+	.slide-body-input {
+		width: 100%;
+		flex: 1;
+		border: 1px solid transparent;
+		background: transparent;
+		font-family: var(--system-font-family);
+		font-size: 18px;
+		line-height: 1.5;
+		text-align: center;
+		color: #3a3a3c;
+		resize: none;
+		outline: none;
+		padding: 8px;
+		border-radius: 6px;
+
+		&:hover {
+			border-color: rgba(0, 122, 255, 0.3);
+		}
+
+		&:focus {
+			border-color: #007aff;
+			background: rgba(255, 255, 255, 0.5);
+		}
+	}
+
+	.dark-canvas .slide-title-input {
+		color: #ffffff;
+	}
+
+	.dark-canvas .slide-body-input {
+		color: rgba(255, 255, 255, 0.85);
+	}
+
+	.notes-pane {
+		width: 640px;
+		max-width: 100%;
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.notes-label {
+		font-size: 11px;
+		font-weight: 600;
+		color: #86868b;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	.slide-notes-input {
+		width: 100%;
+		height: 80px;
+		resize: none;
+		border: 1px solid #c8c8c8;
+		border-radius: 6px;
+		padding: 8px 10px;
+		font-family: var(--system-font-family);
+		font-size: 13px;
+		color: #1c1c1e;
+		background: #ffffff;
+		outline: none;
+
+		&:focus {
+			border-color: #007aff;
+		}
+
+		:global(body.dark) & {
+			background: #2c2c2e;
+			color: #f5f5f7;
+			border-color: #48484a;
+		}
+	}
+
+	.present-slide {
+		gap: 20px;
+	}
+
+	.present-title {
+		font-size: 48px;
+		font-weight: 700;
+		text-align: center;
+		margin: 0;
+		color: #1c1c1e;
+		white-space: pre-wrap;
+	}
+
+	.present-body {
+		font-size: 22px;
+		text-align: center;
+		margin: 0;
+		color: #3a3a3c;
+		white-space: pre-wrap;
+	}
+
+	.present-slide.dark-text .present-title {
+		color: #ffffff;
+	}
+
+	.present-slide.dark-text .present-body {
+		color: rgba(255, 255, 255, 0.8);
 	}
 
 	/* ── Presentation overlay ── */
