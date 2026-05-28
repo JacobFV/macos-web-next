@@ -113,6 +113,50 @@ function clamp_window_state(state: PersistedWindowState, id: AppID): PersistedWi
 	return { x, y, width, height, maximized: !!state.maximized };
 }
 
+type Rect = { x: number; y: number; width: number; height: number };
+
+function _overlap(a: Rect, b: Rect): number {
+	const ix = Math.max(0, Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x));
+	const iy = Math.max(0, Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y));
+	return ix * iy;
+}
+
+/**
+ * Pick a top-left for a new window that overlaps existing open windows as
+ * little as possible — real users drag windows side-by-side to see two apps
+ * at once rather than stacking them. We score a set of anchored slots
+ * (halves, then quadrants, then a centered cascade) against the open windows
+ * and take the least-occluded one. Falls back to centered when nothing is open.
+ */
+function pick_slot(width: number, height: number, existing: Rect[]): { x: number; y: number } {
+	const vw = globalThis.innerWidth || 1280;
+	const vh = globalThis.innerHeight || 800;
+	const left = SIDE_RESERVE;
+	const right = Math.max(SIDE_RESERVE, vw - SIDE_RESERVE - width);
+	const top = TOP_RESERVE + 16;
+	const bottom = Math.max(top, vh - BOTTOM_RESERVE - height);
+	const midX = Math.round((left + right) / 2);
+	const midY = Math.round((top + bottom) / 2);
+	if (existing.length === 0) return { x: midX, y: midY };
+	// Candidate anchors, in preference order (side-by-side first).
+	const cands: { x: number; y: number }[] = [
+		{ x: left, y: top }, { x: right, y: top },          // left / right halves
+		{ x: left, y: bottom }, { x: right, y: bottom },    // bottom corners
+		{ x: midX, y: top }, { x: midX, y: bottom },
+		{ x: midX, y: midY },                                // centered fallback
+	];
+	let best = cands[0];
+	let bestScore = Infinity;
+	for (const c of cands) {
+		const r: Rect = { x: c.x, y: c.y, width, height };
+		let score = 0;
+		for (const e of existing) score += _overlap(r, e);
+		if (score < bestScore) { bestScore = score; best = c; }
+		if (score === 0) break;   // perfect — no overlap
+	}
+	return best;
+}
+
 export const apps = $state({
 	open: {
 		finder: false,
@@ -121,6 +165,7 @@ export const apps = $state({
 		notes: false,
 		messages: false,
 		slack: false,
+		teams: false,
 		mail: false,
 		photos: false,
 		music: false,
@@ -165,6 +210,7 @@ export const apps = $state({
 		notes: 0,
 		messages: 0,
 		slack: 0,
+		teams: 0,
 		mail: 0,
 		photos: 0,
 		music: 0,
@@ -203,6 +249,7 @@ export const apps = $state({
 		notes: false,
 		messages: false,
 		slack: false,
+		teams: false,
 		mail: false,
 		photos: false,
 		music: false,
@@ -288,6 +335,17 @@ class MacWindowManager {
 			this.windowStates[id] = persisted
 				? { ...base, ...clamp_window_state(persisted, id), minimized: false, closing: false }
 				: base;
+			// Place the new window side-by-side with the apps already open
+			// (least overlap) so the user can see both, instead of stacking.
+			if (!persisted) {
+				const open_rects = app_ids
+					.filter((o) => o !== id && apps.open[o] && !this.windowStates[o]?.minimized)
+					.map((o) => this.windowStates[o]);
+				const slot = pick_slot(this.windowStates[id].width,
+					this.windowStates[id].height, open_rects);
+				this.windowStates[id].x = slot.x;
+				this.windowStates[id].y = slot.y;
+			}
 			apps.open[id] = true;
 		}
 

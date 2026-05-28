@@ -34,6 +34,10 @@
 	{#await import('./Slack/Slack.svelte') then { default: Slack }}
 		<Slack />
 	{/await}
+{:else if app_id === 'teams'}
+	{#await import('./Teams/Teams.svelte') then { default: Teams }}
+		<Teams />
+	{/await}
 {:else if app_id === 'mail'}
 	{#await import('./Mail/Mail.svelte') then { default: Mail }}
 		<Mail />

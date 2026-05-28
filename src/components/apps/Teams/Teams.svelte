@@ -10,16 +10,25 @@
 	};
 	type Channel = { channel_id: string; name: string; members: string[]; message_count: number };
 
-	// iMessage lives on its own backend namespace ('imessage:') so it shares
-	// conversations only with the Windows Phone Link / texting app — never
-	// Slack or Teams. Conversation ids are display form (e.g. 'family');
-	// nsId() namespaces them for the shared chat backend.
-	const NETWORK = 'imessage';
-	const nsId = (id: string) => (id.startsWith(NETWORK + ':') ? id : `${NETWORK}:${id}`);
-	const stripId = (id: string) => (id.startsWith(NETWORK + ':') ? id.slice(NETWORK.length + 1) : id);
+	// Network isolation: the Teams app only ever talks to channels namespaced
+	// with the `teams:` prefix, so it can never surface iMessage/Slack traffic.
+	const NETWORK = 'teams';
+	const PREFIX = NETWORK + ':';
+
+	// Ensure an id is namespaced for the backend. Display ids (e.g. `#general`)
+	// get the prefix; already-namespaced ids pass through unchanged.
+	function nsId(id: string): string {
+		return id.startsWith(PREFIX) ? id : PREFIX + id;
+	}
+	// Strip the prefix for display in the UI.
+	function displayId(id: string): string {
+		return id.startsWith(PREFIX) ? id.slice(PREFIX.length) : id;
+	}
 
 	let channels: Channel[] = $state([]);
-	let selected: string = $state('family');
+	// `selected` is held in DISPLAY form (e.g. `#general`); namespaced via nsId()
+	// whenever we talk to the backend.
+	let selected: string = $state('#incident');
 	let messages: ChatMessage[] = $state([]);
 	let composer: string = $state('');
 	let me: string = $state('local');
@@ -40,16 +49,32 @@
 		}
 	}
 
+	function fmt_time(t: number): string {
+		if (!t) return '';
+		try {
+			return new Date(t < 1e12 ? t * 1000 : t).toLocaleTimeString([], {
+				hour: '2-digit',
+				minute: '2-digit'
+			});
+		} catch {
+			return '';
+		}
+	}
+
 	async function refresh_channels() {
 		const c = client();
 		if (!c || !c.enabled) return;
 		const r = await c.chatChannels();
 		if (r && Array.isArray(r.channels)) {
-			channels = r.channels
-				.filter((ch: Channel) => ch.channel_id.startsWith(NETWORK + ':'))
-				.map((ch: Channel) => ({ ...ch, channel_id: stripId(ch.channel_id),
-					name: stripId(ch.name || ch.channel_id) }));
-			if (!channels.find((c) => c.channel_id === selected) && channels.length) {
+			// Only keep channels on the teams network; display them prefix-stripped.
+			channels = (r.channels as Channel[])
+				.filter((ch) => ch.channel_id.startsWith(PREFIX))
+				.map((ch) => ({
+					...ch,
+					channel_id: displayId(ch.channel_id),
+					name: ch.name ? displayId(ch.name) : displayId(ch.channel_id)
+				}));
+			if (!channels.find((ch) => ch.channel_id === selected) && channels.length) {
 				selected = channels[0].channel_id;
 			}
 		}
@@ -60,7 +85,10 @@
 		if (!c || !c.enabled) return;
 		const r = await c.chatHistory(nsId(selected));
 		if (r && Array.isArray(r.messages)) {
-			messages = r.messages as ChatMessage[];
+			messages = (r.messages as ChatMessage[]).map((m) => ({
+				...m,
+				channel_id: displayId(m.channel_id)
+			}));
 			scroll_bottom();
 		}
 	}
@@ -105,25 +133,30 @@
 <section class="container">
 	<header class="app-window-drag-handle titlebar">
 		<span class="status-dot" class:online={connected}></span>
+		<span class="workspace">Microsoft Teams</span>
 		<span class="me">{me}</span>
 		<span class="space"></span>
-		<span class="net">{connected ? 'virtual-internet' : 'offline'}</span>
+		<span class="net">{connected ? NETWORK : 'offline'}</span>
 	</header>
 
 	<div class="main">
 		<aside class="sidebar">
+			<div class="team-card">
+				<span class="team-avatar">A</span>
+				<span class="team-name">ACME Engineering</span>
+			</div>
 			<div class="sidebar-title">Channels</div>
 			<div class="conversation-list">
 				{#each channels as ch (ch.channel_id)}
 					<button
-						class="conversation"
+						class="conversation channel"
 						class:active={selected === ch.channel_id}
 						onclick={() => pick(ch)}
 					>
-						<div class="avatar">#</div>
+						<span class="hash">#</span>
 						<div class="convo-info">
 							<div class="convo-header">
-								<span class="convo-name">{ch.name || ch.channel_id}</span>
+								<span class="convo-name">{displayId(ch.name || ch.channel_id).replace(/^#/, '')}</span>
 								<span class="convo-count">{ch.message_count}</span>
 							</div>
 							<div class="convo-preview">{ch.members.join(', ')}</div>
@@ -145,10 +178,11 @@
 			<div class="messages" bind:this={messages_el}>
 				{#each current_messages as msg (msg.message_id)}
 					<div class="message" class:sent={msg.sender === me}>
-						<div class="bubble">
-							<div class="sender">{msg.sender}</div>
-							<div class="text">{msg.text}</div>
+						<div class="msg-line">
+							<span class="sender">{msg.sender}</span>
+							<span class="timestamp">{fmt_time(msg.t)}</span>
 						</div>
+						<div class="text">{msg.text}</div>
 					</div>
 				{/each}
 				{#if current_messages.length === 0}
@@ -160,7 +194,7 @@
 				<input
 					class="composer"
 					type="text"
-					placeholder="Message {selected}"
+					placeholder="Type a message in {selected}"
 					bind:value={composer}
 					onkeydown={(e) => {
 						if (e.key === 'Enter') send();
@@ -176,13 +210,13 @@
 	.container {
 		height: 100%;
 		width: 100%;
-		background-color: var(--system-color-light);
+		background-color: #ffffff;
 		border-radius: inherit;
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
 		font-family: var(--system-font-family);
-		color: var(--system-color-light-contrast);
+		color: #242424;
 		min-width: 720px;
 	}
 
@@ -192,10 +226,10 @@
 		gap: 8px;
 		padding: 8px 14px;
 		min-height: 36px;
-		background: linear-gradient(to bottom, #f6f6f6, #ededef);
-		border-bottom: 1px solid #d1d1d6;
+		background: #6264a7;
+		border-bottom: 1px solid #4b4ba6;
 		font-size: 12px;
-		color: #555;
+		color: #e6e6f5;
 	}
 	.status-dot {
 		width: 8px;
@@ -203,8 +237,9 @@
 		border-radius: 50%;
 		background: #d33;
 	}
-	.status-dot.online { background: #34c759; }
-	.me { font-weight: 600; color: #333; }
+	.status-dot.online { background: #6bb700; }
+	.workspace { font-weight: 700; color: #ffffff; }
+	.me { font-weight: 600; color: #c7c7ec; }
 	.space { flex: 1; }
 	.net { font-family: ui-monospace, monospace; opacity: 0.8; }
 
@@ -213,64 +248,75 @@
 	.sidebar {
 		width: 240px;
 		min-width: 200px;
-		border-right: 1px solid #d1d1d6;
+		border-right: 1px solid #4b4ba6;
 		display: flex;
 		flex-direction: column;
-		background: #f2f2f7;
-		/* The sidebar background is always light, so pin text to a dark
-		   value — otherwise dark-mode inherits white text and the
-		   channel names vanish against the light gray. */
-		color: #1c1c1e;
+		background: #4b4ba6;
+		color: #dcdcf2;
 	}
-	.sidebar .convo-name,
-	.sidebar .convo-count,
-	.sidebar .convo-preview { color: #1c1c1e; }
+	.team-card {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 12px 14px;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+	}
+	.team-avatar {
+		width: 28px;
+		height: 28px;
+		border-radius: 6px;
+		background: #5b5fc7;
+		color: #ffffff;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 14px;
+		font-weight: 700;
+		flex-shrink: 0;
+	}
+	.team-name { font-size: 13px; font-weight: 600; color: #ffffff; }
 	.sidebar-title {
 		padding: 12px 14px 6px;
 		font-size: 11px;
 		text-transform: uppercase;
 		letter-spacing: 0.06em;
-		color: #888;
+		color: #b5b5e0;
 	}
 	.conversation-list { flex: 1; overflow-y: auto; }
 	.conversation {
 		display: flex;
 		align-items: center;
-		gap: 10px;
+		gap: 8px;
 		width: 100%;
-		padding: 10px 12px;
+		padding: 8px 14px;
 		border: none;
 		background: none;
 		cursor: pointer;
 		text-align: left;
 		color: inherit;
-		border-bottom: 1px solid rgba(0, 0, 0, 0.04);
 	}
-	.conversation:hover { background: rgba(0, 0, 0, 0.04); }
-	.conversation.active { background: #007aff; color: white; }
+	.conversation:hover { background: rgba(255, 255, 255, 0.08); }
+	.conversation.active { background: #5b5fc7; color: #ffffff; }
 	.conversation.active .convo-name,
 	.conversation.active .convo-count,
-	.conversation.active .convo-preview { color: white; }
-	.avatar {
-		width: 32px;
-		height: 32px;
-		border-radius: 8px;
-		background: #007aff;
-		color: white;
-		font-weight: 700;
-		display: flex;
-		align-items: center;
-		justify-content: center;
+	.conversation.active .convo-preview,
+	.conversation.active .hash { color: #ffffff; }
+	.hash {
+		font-size: 16px;
+		font-weight: 600;
+		color: #b5b5e0;
 		flex-shrink: 0;
+		width: 16px;
+		text-align: center;
 	}
-	.conversation.active .avatar { background: rgba(255,255,255,0.25); }
 	.convo-info { flex: 1; min-width: 0; }
 	.convo-header { display: flex; justify-content: space-between; align-items: center; }
-	.convo-name { font-size: 14px; font-weight: 600; }
-	.convo-count { font-size: 11px; opacity: 0.6; }
+	.convo-name { font-size: 14px; font-weight: 500; color: #dcdcf2; }
+	.convo-count { font-size: 11px; opacity: 0.6; color: #dcdcf2; }
 	.convo-preview {
 		font-size: 12px;
-		opacity: 0.7;
+		opacity: 0.6;
+		color: #dcdcf2;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
@@ -278,20 +324,21 @@
 	.empty {
 		padding: 20px;
 		font-size: 13px;
-		color: #888;
+		color: #999;
 		text-align: center;
 	}
 
-	.chat-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+	.chat-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #fff; }
 	.chat-header {
 		display: flex;
 		align-items: baseline;
-		justify-content: space-between;
+		gap: 12px;
 		padding: 10px 18px;
-		border-bottom: 1px solid #d1d1d6;
-		background: rgba(0, 0, 0, 0.02);
+		border-bottom: 1px solid #e1e1e8;
+		background: #fff;
 	}
-	.chat-name { font-size: 15px; font-weight: 700; }
+	.chat-name { font-size: 16px; font-weight: 800; color: #242424; }
+	.chat-name::before { content: '# '; opacity: 0.5; }
 	.chat-members { font-size: 12px; color: #888; }
 
 	.messages {
@@ -300,52 +347,53 @@
 		padding: 16px 18px;
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
+		gap: 10px;
 		background: #fff;
 	}
-	.message { display: flex; flex-direction: column; max-width: 78%; }
-	.message.sent { align-self: flex-end; align-items: flex-end; }
-	.bubble {
-		padding: 8px 14px;
-		border-radius: 14px;
-		font-size: 14px;
-		line-height: 1.4;
-		background: #e9e9eb;
-		color: #1c1c1e;
+	.message {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		max-width: 100%;
+		padding: 6px 10px;
+		border-radius: 8px;
+		border-left: 3px solid transparent;
 	}
-	.message.sent .bubble {
-		background: #007aff;
-		color: white;
-	}
-	.sender { font-size: 11px; font-weight: 700; opacity: 0.7; margin-bottom: 2px; }
+	.message:hover { background: #f5f5fb; }
+	.message.sent { background: #eef0fb; border-left-color: #6264a7; }
+	.msg-line { display: flex; align-items: baseline; gap: 8px; }
+	.sender { font-size: 13px; font-weight: 700; color: #6264a7; }
+	.timestamp { font-size: 11px; color: #999; }
+	.text { font-size: 14px; line-height: 1.46; color: #242424; }
 
 	.input-area {
 		display: flex;
 		gap: 8px;
-		padding: 10px 18px;
-		border-top: 1px solid #d1d1d6;
-		background: rgba(0, 0, 0, 0.02);
+		padding: 10px 18px 14px;
+		border-top: 1px solid #e1e1e8;
+		background: #fff;
 	}
 	.composer {
 		flex: 1;
 		padding: 10px 14px;
-		border: 1px solid #d1d1d6;
-		border-radius: 20px;
+		border: 1px solid #c5c5d4;
+		border-radius: 8px;
 		font-size: 14px;
 		background: white;
 		outline: none;
+		color: #242424;
 	}
-	.composer:focus { border-color: #007aff; }
+	.composer:focus { border-color: #6264a7; box-shadow: 0 0 0 1px #6264a7; }
 	.send-btn {
 		padding: 0 18px;
 		min-width: 70px;
-		border-radius: 18px;
+		border-radius: 8px;
 		border: none;
-		background: #007aff;
+		background: #5b5fc7;
 		color: white;
 		font-size: 14px;
-		font-weight: 600;
+		font-weight: 700;
 		cursor: pointer;
 	}
-	.send-btn:hover { background: #0066d6; }
+	.send-btn:hover { background: #4b4ba6; }
 </style>

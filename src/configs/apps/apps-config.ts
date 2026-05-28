@@ -82,6 +82,15 @@ const slack = create_app_config({
 	width: 820,
 });
 
+const teams = create_app_config({
+	title: 'Microsoft Teams',
+	resizable: true,
+	should_open_window: true,
+
+	height: 560,
+	width: 840,
+});
+
 const mail = create_app_config({
 	title: 'Mail',
 	resizable: true,
@@ -252,6 +261,7 @@ export const apps_config = {
 	notes,
 	messages,
 	slack,
+	teams,
 	mail,
 	photos,
 	music,
