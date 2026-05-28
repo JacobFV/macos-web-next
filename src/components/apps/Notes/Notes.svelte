@@ -234,13 +234,55 @@
 		}
 	}
 
+	// Deterministic per-actor seed so a fleet of machines doesn't all show
+	// the identical "Weekly Team Standup Notes" set — that cloning is the
+	// most obvious tell in multi-worker captures. We derive an integer from
+	// the synthux-injected actor id and use it to rotate which note is
+	// pinned/first and to vary the standup note's sprint + metrics.
+	function actor_hash(): number {
+		let actor = '';
+		try {
+			const cfg: any = (window as any).__synthuxInternetConfig
+				|| (window as any).__synthuxVirtualInternet;
+			actor = (cfg && cfg.actor) ? String(cfg.actor) : '';
+		} catch { actor = ''; }
+		let h = 2166136261;
+		for (let i = 0; i < actor.length; i++) {
+			h ^= actor.charCodeAt(i);
+			h = Math.imul(h, 16777619);
+		}
+		return Math.abs(h) || 0;
+	}
+
+	function varied_seed_notes(): Omit<Note, 'id'>[] {
+		const h = actor_hash();
+		const list = seed_notes.map((n) => ({ ...n }));
+		// Vary the standup note so it reads as this team's, not a clone.
+		const sprint = 18 + (h % 12);
+		const week = 1 + (h % 4);
+		const crash = 20 + (h % 45);
+		const migration = 40 + (h % 55);
+		const standup = list.find((n) => n.title === 'Weekly Team Standup Notes');
+		if (standup) {
+			standup.title = `Sprint ${sprint} Standup — Week ${week}`;
+			standup.body = standup.body
+				.replace('Sprint 24 - Week 3', `Sprint ${sprint} - Week ${week}`)
+				.replace('70% complete', `${migration}% complete`)
+				.replace('down by 40%', `down by ${crash}%`);
+		}
+		// Rotate so a different note surfaces first per actor.
+		const off = h % list.length;
+		return list.slice(off).concat(list.slice(0, off));
+	}
+
 	function seed_if_empty(): void {
 		ensure_notes_dir();
 		const entries = ls(NOTES_DIR);
 		if (entries.length > 0) return; // already populated
 
-		for (let i = 0; i < seed_notes.length; i++) {
-			const s = seed_notes[i];
+		const seeds = varied_seed_notes();
+		for (let i = 0; i < seeds.length; i++) {
+			const s = seeds[i];
 			// Use created_at as the id base, offset by index to ensure uniqueness
 			const id = String(s.created_at + i);
 			const note: Note = { id, ...s };
