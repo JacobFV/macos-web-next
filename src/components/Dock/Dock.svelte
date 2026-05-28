@@ -112,10 +112,17 @@
 
 		display: flex;
 		justify-content: center;
+		/* Hard guard — even if the icon row tries to bloom past the
+		   viewport on hover, clip it so nothing falls off the screen. */
+		overflow: hidden;
 
 		&:not(.dock-hidden) {
 			pointer-events: none;
 		}
+	}
+
+	.dock-el {
+		max-width: calc(100vw - 1.5rem);
 	}
 
 	/* Bottom dock uses variable height from preferences */

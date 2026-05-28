@@ -53,12 +53,29 @@ function save_json<T>(key: string, value: T): void {
 	}
 }
 
+// Reserved chrome — top menubar ~27px, dock ~83px. App windows must
+// not extend into these zones or the simulator looks broken when an
+// agent maximizes / drags near edges.
+const TOP_RESERVE = 28;
+const BOTTOM_RESERVE = 96;
+const SIDE_RESERVE = 12;
+
+function usable_height(): number {
+	return Math.max(200, (globalThis.innerHeight || 800) - TOP_RESERVE - BOTTOM_RESERVE);
+}
+
+function usable_width(): number {
+	return Math.max(280, (globalThis.innerWidth || 1280) - SIDE_RESERVE * 2);
+}
+
 function create_window_state(id: AppID, index: number): WindowState {
 	const config = apps_config[id];
-	const width = Number(config.width ?? 600);
-	const height = Number(config.height ?? 500);
-	const x = Math.max(24, (globalThis.innerWidth || 1280) / 2 - width / 2 + index * 28);
-	const y = Math.max(32, 80 + index * 24);
+	const maxH = usable_height();
+	const maxW = usable_width();
+	const width = Math.min(Number(config.width ?? 600), maxW);
+	const height = Math.min(Number(config.height ?? 500), maxH);
+	const x = Math.max(SIDE_RESERVE, (globalThis.innerWidth || 1280) / 2 - width / 2 + index * 28);
+	const y = Math.max(TOP_RESERVE + 16, TOP_RESERVE + 52 + index * 24);
 	return {
 		x,
 		y,
@@ -75,12 +92,16 @@ function clamp_window_state(state: PersistedWindowState, id: AppID): PersistedWi
 	const config = apps_config[id];
 	const defaultWidth = Number(config.width ?? 600);
 	const defaultHeight = Number(config.height ?? 500);
-	const viewportWidth = globalThis.innerWidth || 1280;
-	const viewportHeight = globalThis.innerHeight || 800;
-	const width = Math.min(Math.max(state.width || defaultWidth, 220), viewportWidth);
-	const height = Math.min(Math.max(state.height || defaultHeight, 160), viewportHeight);
-	const x = Math.max(0, Math.min(state.x || 0, Math.max(0, viewportWidth - 80)));
-	const y = Math.max(27.2, Math.min(state.y || 80, Math.max(27.2, viewportHeight - 80)));
+	const maxW = usable_width();
+	const maxH = usable_height();
+	const width = Math.min(Math.max(state.width || defaultWidth, 220), maxW);
+	const height = Math.min(Math.max(state.height || defaultHeight, 160), maxH);
+	const x = Math.max(SIDE_RESERVE,
+		Math.min(state.x || 0,
+		         Math.max(SIDE_RESERVE, (globalThis.innerWidth || 1280) - 80)));
+	const y = Math.max(TOP_RESERVE,
+		Math.min(state.y || 80,
+		         Math.max(TOP_RESERVE, (globalThis.innerHeight || 800) - BOTTOM_RESERVE - 80)));
 	return { x, y, width, height, maximized: !!state.maximized };
 }
 

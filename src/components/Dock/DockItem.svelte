@@ -33,16 +33,19 @@
 	});
 	const icon_count = $derived(Object.keys(apps_config).length);
 	const dock_pref_width = $derived((preferences.dock.size / 48) * default_base_width);
-	// Account for magnification: a hovered icon grows to peak_scale,
-	// adding (peak_scale - 1) * base_width over the row total at the worst
-	// case (cursor centered on one icon). Solve:
-	//   icon_count * base + base * extra_factor + 64 <= viewport_w
-	// where extra_factor = (peak_scale - 1) + 2*(side_scale - 1) +
-	//                      2*(outer_scale - 1) ≈ 0.4 + 0.36 + 0.10 = 0.86
-	const peak_extra_factor = 0.9;
-	const fit_width = $derived(Math.max(24, Math.min(
+	// Account for magnification + dock-container/dock-el padding. The
+	// row of icons is centered inside dock-container; when icons grow
+	// the row width grows around the center. Worst case the row is
+	//   icon_count * base + extra * base  + ~22px CSS padding.
+	// We reserve 140px total horizontal safe margin and use a 1.6×
+	// magnification budget so a 1.4× peak with a 1.18× neighbor still
+	// fits with headroom.
+	const PEAK_EXTRA_FACTOR = 1.6;   // ample headroom over the actual peak
+	const SAFE_MARGIN_PX    = 140;
+	const fit_width = $derived(Math.max(22, Math.min(
 		dock_pref_width,
-		(viewport_w - 64) / (Math.max(1, icon_count) + peak_extra_factor),
+		(viewport_w - SAFE_MARGIN_PX) /
+			(Math.max(1, icon_count) + PEAK_EXTRA_FACTOR),
 	)));
 	const base_width = $derived(fit_width);
 
