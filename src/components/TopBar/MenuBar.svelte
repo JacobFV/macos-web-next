@@ -2,7 +2,15 @@
 	import AppleIcon from '~icons/mdi/apple';
 	import { click_outside, elevation, focus_outside } from '🍎/actions';
 	import { menubar_state } from '🍎/state/menubar.svelte';
+	import { apps } from '🍎/state/apps.svelte';
+	import { apps_config } from '🍎/configs/apps/apps-config';
 	import Menu from './Menu.svelte';
+
+	// The bold left-most menu reflects the focused app, not a hardcoded
+	// "Finder" — macOS shows the active application's name there.
+	const active_app_title = $derived(
+		(apps.active && apps_config[apps.active]?.title) || 'Finder'
+	);
 </script>
 
 <div
@@ -24,6 +32,8 @@
 				>
 					{#if menuID === 'apple'}
 						<AppleIcon />
+					{:else if menuID === 'default'}
+						{active_app_title}
 					{:else}
 						{menuConfig.title}
 					{/if}
