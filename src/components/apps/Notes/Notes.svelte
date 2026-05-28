@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { tick, onMount } from 'svelte';
+	import { tick, onMount, untrack } from 'svelte';
 	import { vfs_version, ls, read_file, write_file, rm, exists, mkdir } from '../../../state/vfs.svelte';
 	import { consume_pending_file } from '../../../state/file-opener.svelte';
 	import { copy_text, paste_text } from '../../../state/clipboard.svelte';
@@ -415,6 +415,22 @@
 	});
 
 	const selected_note = $derived(notes.find(n => n.id === selected_note_id) ?? null);
+
+	// The title/body contenteditables are UNCONTROLLED while editing: we seed
+	// their HTML only when the selected note changes, never on every keystroke.
+	// Binding {@html selected_note.body} directly re-rendered the DOM on each
+	// input (save → notes re-derives → re-render), which reset the caret to the
+	// start and made typed text come out reversed ("...langiSprint" for
+	// "Signal..."). We snapshot via untrack so input-driven body changes don't
+	// retrigger the render; switching notes (selected_note_id) reseeds it.
+	let editor_body_html = $state('');
+	let editor_title_text = $state('');
+	$effect(() => {
+		selected_note_id;  // re-seed only when the active note changes
+		const note = untrack(() => notes.find(n => n.id === selected_note_id) ?? null);
+		editor_body_html = note ? note.body : '';
+		editor_title_text = note ? note.title : '';
+	});
 
 	type NoteGroup = {
 		label: string;
@@ -1016,7 +1032,7 @@
 							tabindex="0"
 							oninput={handle_title_input}
 							onkeydown={handle_title_keydown}
-						>{selected_note.title}</div>
+						>{editor_title_text}</div>
 						<!-- svelte-ignore a11y_no_static_element_interactions -->
 						<div
 							class="editor-body"
@@ -1027,7 +1043,7 @@
 							onkeyup={handle_editor_keyup}
 							onmouseup={handle_editor_mouseup}
 							onclick={handle_editor_click}
-						>{@html selected_note.body}</div>
+						>{@html editor_body_html}</div>
 					{/key}
 				</div>
 			{:else}
