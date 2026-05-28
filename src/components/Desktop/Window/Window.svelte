@@ -211,11 +211,20 @@
 		const tr = readTranslate();
 		posX = tr.x;
 		posY = tr.y;
+		// CRITICAL: the style binding renders width as `(ws.width / remModifier)rem`,
+		// so ws.width is NOT in raw px — it's in "remModifier·rem" units. Storing
+		// the rendered `rect.width` (px) straight back would re-divide by
+		// remModifier on the next render, shrinking the window by remPx/remModifier
+		// every time geometry is recorded (e.g. ×16/24 ≈ 0.667 per action for tall
+		// windows). Convert the measured px back into the same units so the
+		// round-trip is stable.
+		const remPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+		const toUnits = remModifier / remPx;
 		windowManager.updateGeometry(app_id, {
 			x: rect.left,
 			y: rect.top,
-			width: rect.width,
-			height: rect.height,
+			width: rect.width * toUnits,
+			height: rect.height * toUnits,
 		});
 	}
 
