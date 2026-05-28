@@ -206,7 +206,14 @@
 		display: flex;
 		flex-direction: column;
 		background: #f2f2f7;
+		/* The sidebar background is always light, so pin text to a dark
+		   value — otherwise dark-mode inherits white text and the
+		   channel names vanish against the light gray. */
+		color: #1c1c1e;
 	}
+	.sidebar .convo-name,
+	.sidebar .convo-count,
+	.sidebar .convo-preview { color: #1c1c1e; }
 	.sidebar-title {
 		padding: 12px 14px 6px;
 		font-size: 11px;
@@ -230,6 +237,9 @@
 	}
 	.conversation:hover { background: rgba(0, 0, 0, 0.04); }
 	.conversation.active { background: #007aff; color: white; }
+	.conversation.active .convo-name,
+	.conversation.active .convo-count,
+	.conversation.active .convo-preview { color: white; }
 	.avatar {
 		width: 32px;
 		height: 32px;
