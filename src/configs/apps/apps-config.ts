@@ -73,6 +73,15 @@ const messages = create_app_config({
 	width: 1100,
 });
 
+const slack = create_app_config({
+	title: 'Slack',
+	resizable: true,
+	should_open_window: true,
+
+	height: 560,
+	width: 820,
+});
+
 const mail = create_app_config({
 	title: 'Mail',
 	resizable: true,
@@ -242,6 +251,7 @@ export const apps_config = {
 	terminal,
 	notes,
 	messages,
+	slack,
 	mail,
 	photos,
 	music,
