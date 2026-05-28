@@ -266,22 +266,29 @@
 	}
 
 	// --- Navigation ---
-	function rewrite_github(target: string): string {
-		// Route github.com URLs through the SynthUX virtual internet so the
-		// iframe can actually render (real github.com sends X-Frame-Options).
+	function rewrite_via_vi(target: string): string {
+		// Route any URL through the SynthUX virtual internet so the iframe
+		// can render — real upstream sites send X-Frame-Options. github.com
+		// gets a structured rewrite; everything else uses /web/<host>/...
+		// which the VI translates into either a registered service hit or
+		// a synthesized landing page (google search shell, intranet, etc).
 		const net = (window as any).__synthuxInternet;
 		if (!net || !net.enabled || !net.url) return target;
 		try {
 			const u = new URL(target);
-			if (!u.hostname.endsWith('github.com')) return target;
-			const parts = u.pathname.split('/').filter(Boolean);
-			const owner = parts[0] || 'acme';
-			const repo = parts[1] || 'api';
-			let view = 'overview';
-			if (parts[2] === 'pulls') view = 'pulls';
-			else if (parts[2] === 'pull' && parts[3]) return `${net.url}/web/github/${owner}/${repo}/pull/${parts[3]}`;
-			else if (parts[2]) view = parts[2];
-			return `${net.url}/web/github/${owner}/${repo}?view=${encodeURIComponent(view)}`;
+			const host = u.hostname;
+			if (host.endsWith('github.com')) {
+				const parts = u.pathname.split('/').filter(Boolean);
+				const owner = parts[0] || 'acme';
+				const repo = parts[1] || 'api';
+				if (parts[2] === 'pull' && parts[3]) {
+					return `${net.url}/web/github/${owner}/${repo}/pull/${parts[3]}`;
+				}
+				const view = parts[2] === 'pulls' ? 'pulls' : (parts[2] || 'overview');
+				return `${net.url}/web/github/${owner}/${repo}?view=${encodeURIComponent(view)}`;
+			}
+			// Generic VI route for any other host.
+			return `${net.url}/web/${host}${u.pathname}${u.search}`;
 		} catch { return target; }
 	}
 
@@ -295,7 +302,7 @@
 		} else if (!target.startsWith('http://') && !target.startsWith('https://')) {
 			target = 'https://' + target;
 		}
-		target = rewrite_github(target);
+		target = rewrite_via_vi(target);
 
 		const tab_index = tabs.findIndex((t) => t.id === active_tab_id);
 		if (tab_index === -1) return;
