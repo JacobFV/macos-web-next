@@ -70,12 +70,18 @@ function usable_width(): number {
 
 function create_window_state(id: AppID, index: number): WindowState {
 	const config = apps_config[id];
+	const vw = globalThis.innerWidth || 1280;
+	const vh = globalThis.innerHeight || 800;
 	const maxH = usable_height();
 	const maxW = usable_width();
 	const width = Math.min(Number(config.width ?? 600), maxW);
 	const height = Math.min(Number(config.height ?? 500), maxH);
-	const x = Math.max(SIDE_RESERVE, (globalThis.innerWidth || 1280) / 2 - width / 2 + index * 28);
-	const y = Math.max(TOP_RESERVE + 16, TOP_RESERVE + 52 + index * 24);
+	// Cascade, but clamp so the whole window stays inside the usable rect
+	// (never under the dock / off the right edge), regardless of index.
+	const maxX = Math.max(SIDE_RESERVE, vw - SIDE_RESERVE - width);
+	const maxY = Math.max(TOP_RESERVE, vh - BOTTOM_RESERVE - height);
+	const x = Math.min(Math.max(SIDE_RESERVE, vw / 2 - width / 2 + index * 28), maxX);
+	const y = Math.min(Math.max(TOP_RESERVE + 16, TOP_RESERVE + 52 + index * 24), maxY);
 	return {
 		x,
 		y,
