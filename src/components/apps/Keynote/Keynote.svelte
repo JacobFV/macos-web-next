@@ -20,14 +20,14 @@
 	let zoom_pct = $state(75);
 	let is_presenting = $state(false);
 
-	const slides: Slide[] = [
+	let slides = $state<Slide[]>([
 		{ id: 1, type: 'title', bg: '#1a1a2e', dark: true },
 		{ id: 2, type: 'bullets', bg: '#ffffff', dark: false },
 		{ id: 3, type: 'chart', bg: '#ffffff', dark: false },
 		{ id: 4, type: 'image-text', bg: '#ffffff', dark: false },
 		{ id: 5, type: 'quote', bg: '#f0f0f5', dark: false },
 		{ id: 6, type: 'thankyou', bg: 'linear-gradient(135deg, #667eea, #764ba2)', dark: true },
-	];
+	]);
 
 	const chart_data: BarData[] = [
 		{ label: 'Q1', value: 65, color: '#007aff' },
@@ -79,7 +79,12 @@
 	const current_content = $derived(slide_content[current_slide.id]);
 
 	function add_slide() {
-		// Noop for UI demo
+		// Append a fresh content slide with empty title/body and select it, so
+		// typing lands on a clean slide (not piled onto slide 1's defaults).
+		const next_id = slides.reduce((m, s) => Math.max(m, s.id), 0) + 1;
+		slides.push({ id: next_id, type: 'bullets', bg: '#ffffff', dark: false });
+		slide_content[next_id] = { title: '', body: '', notes: '' };
+		selected_slide = slides.length - 1;
 	}
 
 	function start_presentation() {
@@ -133,7 +138,7 @@
 	<section class="container">
 		<header class="app-window-drag-handle toolbar">
 			<div class="toolbar-left">
-				<button class="tool-btn add-btn" onclick={add_slide} title="Add Slide">
+				<button class="tool-btn add-btn add-slide" onclick={add_slide} title="Add Slide">
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
 						<path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
 					</svg>
